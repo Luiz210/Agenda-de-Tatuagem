@@ -1,0 +1,68 @@
+{
+  "name": "agenda-tatuagem",
+  "productName": "Agenda de Tatuagem",
+  "version": "1.0.0",
+  "description": "Agenda de sessões de tatuagem",
+  "author": "Luiz",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "instalador": "electron-builder --win"
+  },
+  "build": {
+    "appId": "com.agenda.tatuagem",
+    "productName": "Agenda de Tatuagem",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "atualizador.js",
+      "preload.js",
+      "splash.html",
+      "conexao.html",
+      "build/icon.png",
+      "ui/**"
+    ],
+    "extraResources": [
+      {
+        "from": "backend/agenda.jar",
+        "to": "agenda.jar"
+      },
+      {
+        "from": "backend/jre",
+        "to": "jre"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "linux": {
+      "target": "dir",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "Agenda de Tatuagem",
+      "runAfterFinish": true
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Luiz210",
+        "repo": "Agenda-de-Tatuagem",
+        "releaseType": "release"
+      }
+    ]
+  },
+  "devDependencies": {
+    "electron": "^45.2.1",
+    "electron-builder": "^26.18.0"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
+  }
+}

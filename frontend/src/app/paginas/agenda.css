@@ -1,0 +1,11 @@
+.cabecalho { align-items: center; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; margin-bottom: 1.25rem; }
+.navegacao { display: flex; gap: 0.4rem; }
+.navegacao .botao { min-width: 2.6rem; }
+.layout { align-items: start; display: grid; gap: 1.5rem; grid-template-columns: minmax(0, 1fr) minmax(19rem, 25rem); }
+.painel { display: grid; gap: 0.6rem; position: sticky; top: 1rem; }
+.painel h2 { font-size: 1.3rem; }
+.painel .botao { justify-self: start; }
+@media (max-width: 1100px) {
+  .layout { grid-template-columns: minmax(0, 1fr); }
+  .painel { position: static; }
+}

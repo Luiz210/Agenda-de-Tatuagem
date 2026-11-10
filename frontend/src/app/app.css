@@ -1,0 +1,114 @@
+.shell {
+  display: grid;
+  grid-template: 'logo topo' 4rem 'lateral conteudo' 1fr / 13.5rem minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.logo {
+  align-items: center;
+  background: var(--noite);
+  color: #fff;
+  display: flex;
+  font: 700 1.02rem/1.1 var(--titulo);
+  gap: 0.6rem;
+  grid-area: logo;
+  padding: 0 1.25rem;
+  text-decoration: none;
+}
+
+.topo {
+  align-items: center;
+  background: var(--papel);
+  border-bottom: 1px solid var(--linha);
+  color: var(--suave);
+  display: flex;
+  grid-area: topo;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+}
+
+.menu { position: relative; }
+
+.avatar {
+  align-items: center;
+  background: none;
+  border: 1px solid var(--linha);
+  border-radius: 50%;
+  color: var(--texto);
+  cursor: pointer;
+  display: flex;
+  height: 2.5rem;
+  justify-content: center;
+  width: 2.5rem;
+}
+
+.menu-lista {
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(16 38 46 / 18%);
+  min-width: 13rem;
+  padding: 0.3rem;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 5;
+}
+
+.menu-lista a, .menu-lista button {
+  background: none;
+  border: 0;
+  border-radius: 5px;
+  color: var(--texto);
+  cursor: pointer;
+  display: block;
+  font: inherit;
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+  text-decoration: none;
+  width: 100%;
+}
+.menu-lista a:hover, .menu-lista button:hover { background: var(--fundo); }
+
+.conta { border-bottom: 1px solid var(--linha); display: grid; font-size: 0.9rem; margin: 0 0 0.3rem; padding: 0.35rem 0.6rem 0.6rem; }
+.conta span { color: var(--suave); font-size: 0.8rem; overflow-wrap: anywhere; }
+
+.lateral {
+  background: var(--noite);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  grid-area: lateral;
+  padding: 0.75rem 0.75rem 1.5rem;
+}
+
+.lateral a {
+  border-radius: 999px;
+  color: #d9d9d9;
+  font-weight: 500;
+  padding: 0.55rem 0.9rem;
+  text-decoration: none;
+}
+.lateral a:hover { background: var(--noite-2); color: #fff; }
+.lateral a.ativo { background: var(--vermelho); color: #fff; font-weight: 600; }
+
+.conteudo { grid-area: conteudo; padding: 1.75rem clamp(1rem, 3vw, 2.5rem) 3rem; }
+
+@media (max-width: 800px) {
+  .shell {
+    grid-template: 'logo topo' 3.5rem 'lateral lateral' auto 'conteudo conteudo' 1fr / auto minmax(0, 1fr);
+  }
+  .topo { justify-content: flex-end; padding: 0 1rem; }
+  .topo span { display: none; }
+  .lateral { flex-direction: row; overflow-x: auto; padding: 0.5rem 1rem; }
+  .lateral a { flex: none; }
+  .conteudo { padding: 1.25rem 1rem 2.5rem; }
+}
+
+.avatar { position: relative; }
+.ponto { background: var(--vermelho); border: 2px solid var(--papel); border-radius: 50%; height: 0.75rem; position: absolute; right: -0.1rem; top: -0.1rem; width: 0.75rem; }
+.versao { border-top: 1px solid var(--linha); display: grid; font-size: 0.85rem; gap: 0.1rem; margin-top: 0.3rem; padding-top: 0.45rem; }
+.versao span, .versao small { color: var(--suave); padding: 0 0.6rem; }
+.menu-lista .versao .acao { color: var(--vermelho); font-weight: 600; }
+.aviso-atualizacao { align-items: center; background: var(--papel); border-left: 4px solid var(--vermelho); border-radius: 8px; display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; justify-content: space-between; margin-bottom: 1.25rem; padding: 0.75rem 1rem; }
+.aviso-atualizacao > div { align-items: center; display: flex; gap: 0.8rem; }

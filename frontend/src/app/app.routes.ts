@@ -1,0 +1,18 @@
+import { Routes } from '@angular/router';
+import { exigeLogin, soSemLogin } from './core/autenticacao';
+import { PaginaAgenda } from './paginas/agenda';
+import { Clientes } from './paginas/clientes';
+import { Entrar } from './paginas/entrar';
+import { FichaCliente } from './paginas/ficha-cliente';
+import { Home } from './paginas/home';
+
+const NOME = 'Agenda de Tatuagem';
+
+export const routes: Routes = [
+  { path: 'entrar', component: Entrar, title: `Entrar | ${NOME}`, canActivate: [soSemLogin] },
+  { path: '', component: Home, title: NOME, canActivate: [exigeLogin] },
+  { path: 'agenda', component: PaginaAgenda, title: `Agenda | ${NOME}`, canActivate: [exigeLogin] },
+  { path: 'clientes', component: Clientes, title: `Clientes | ${NOME}`, canActivate: [exigeLogin] },
+  { path: 'clientes/:id', component: FichaCliente, title: `Cliente | ${NOME}`, canActivate: [exigeLogin] },
+  { path: '**', redirectTo: '' },
+];

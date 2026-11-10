@@ -1,0 +1,78 @@
+@if (autenticacao.conta()) {
+<div class="shell">
+  <a class="logo" routerLink="/">
+    <app-logo />
+    <span>Agenda de<br />Tatuagem</span>
+  </a>
+
+  <header class="topo">
+    <span>{{ hoje }}</span>
+    <div class="menu">
+      <button
+        type="button"
+        class="avatar"
+        aria-label="Menu de opções"
+        aria-haspopup="true"
+        [attr.aria-expanded]="menuAberto()"
+        (click)="alternarMenu($event)"
+      >
+        @if (prontaParaInstalar()) {
+          <span class="ponto" title="Atualização pronta"></span>
+        }
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M4 21c1-5 4.5-7 8-7s7 2 8 7" />
+        </svg>
+      </button>
+      @if (menuAberto()) {
+        <div class="menu-lista">
+          @if (autenticacao.conta(); as conta) {
+            <p class="conta">
+              <strong>{{ conta.nome }}</strong>
+              <span>{{ conta.email }}</span>
+            </p>
+          }
+          @if (noAplicativo) {
+            <button type="button" (click)="abrirConexao()">Conexão</button>
+          }
+          <button type="button" (click)="sair()">Sair</button>
+          @if (atualizacao(); as a) {
+            <div class="versao">
+              <span>Versão {{ a.versaoAtual }}</span>
+              @if (statusAtualizacao()) {
+                <small role="status">{{ statusAtualizacao() }}</small>
+              }
+              @if (a.fase === 'pronta') {
+                <button type="button" class="acao" (click)="instalarAtualizacao()">Reiniciar e atualizar</button>
+              } @else if (a.fase !== 'indisponivel' && a.fase !== 'baixando' && a.fase !== 'verificando') {
+                <button type="button" class="acao" (click)="buscarAtualizacao($event)">Buscar atualizações</button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </header>
+
+  <nav class="lateral" aria-label="Telas">
+    <a routerLink="/" routerLinkActive="ativo" [routerLinkActiveOptions]="{ exact: true }">Hoje</a>
+    <a routerLink="/agenda" routerLinkActive="ativo">Agenda</a>
+    <a routerLink="/clientes" routerLinkActive="ativo">Clientes</a>
+  </nav>
+
+  <main class="conteudo">
+      @if (prontaParaInstalar() && !avisoFechado()) {
+        <div class="aviso-atualizacao" role="status">
+          <span>A versão {{ atualizacao()?.versao }} da Agenda está pronta para instalar.</span>
+          <div>
+            <button type="button" class="botao" (click)="instalarAtualizacao()">Reiniciar e atualizar</button>
+            <button type="button" class="link-acao" (click)="avisoFechado.set(true)">Depois</button>
+          </div>
+        </div>
+      }
+    <router-outlet />
+  </main>
+</div>
+} @else {
+  <router-outlet />
+}

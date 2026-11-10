@@ -1,0 +1,40 @@
+<dialog #dialogo class="modal" (close)="fechar.emit()" (click)="fecharPeloFundo($event)">
+  <form class="modal-corpo" (submit)="enviar($event)">
+    <header class="modal-topo">
+      <h2>{{ cliente() ? 'Editar cliente' : 'Novo cliente' }}</h2>
+      <button type="button" class="botao secundario fechar" aria-label="Fechar" (click)="dialogo.close()">✕</button>
+    </header>
+    @if (erro()) {
+      <p class="aviso-erro" role="alert">{{ erro() }}</p>
+    }
+    <label class="campo">
+      Nome
+      <input name="nome" required maxlength="120" [value]="cliente()?.nome ?? ''" autocomplete="off" />
+    </label>
+    <div class="linha-campos">
+      <label class="campo">
+        <span>Telefone <small>(opcional)</small></span>
+        <input
+          name="telefone"
+          type="tel"
+          inputmode="tel"
+          placeholder="(16) 99999-9999"
+          [value]="telefoneFormatado(cliente()?.telefone)"
+          autocomplete="off"
+        />
+      </label>
+      <label class="campo">
+        <span>Instagram <small>(opcional)</small></span>
+        <input name="instagram" maxlength="61" placeholder="@usuario" [value]="cliente()?.instagram ?? ''" autocomplete="off" />
+      </label>
+    </div>
+    <label class="campo">
+      <span>Observações <small>(alergias, preferências...)</small></span>
+      <textarea name="observacoes" maxlength="1000">{{ cliente()?.observacoes ?? '' }}</textarea>
+    </label>
+    <p class="vazio-texto">Com telefone, dá para confirmar as sessões pelo WhatsApp.</p>
+    <div class="acoes">
+      <button class="botao" [disabled]="ocupado()">Salvar</button>
+    </div>
+  </form>
+</dialog>

@@ -1,0 +1,38 @@
+<article class="cartao" [class.cancelada]="sessao().status === 'CANCELADA'">
+  <button type="button" class="principal" (click)="abrir.emit(sessao())">
+    <span class="horario">
+      @if (mostrarData()) {
+        <small class="dia">{{ diaCurto(sessao().data) }}</small>
+      }
+      <strong>{{ horaCurta(sessao().hora) }}</strong>
+      @if (duracao()) {
+        <small>{{ duracao() }}</small>
+      }
+    </span>
+    @if (urlImagem(); as url) {
+      <img class="miniatura" [src]="url" alt="" />
+    }
+    <span class="texto">
+      <strong class="cliente">{{ sessao().clienteNome }}</strong>
+      <span class="descricao">
+        {{ sessao().descricao }}
+        @if (sessao().localCorpo) {
+          · {{ sessao().localCorpo }}
+        }
+      </span>
+      <span class="meta">
+        <span class="etiqueta" [class]="'etiqueta ' + sessao().status.toLowerCase()">{{ status() }}</span>
+        @if (sessao().totalSessoes > 1) {
+          <span>Sessão {{ sessao().numero }} de {{ sessao().totalSessoes }}</span>
+        }
+      </span>
+    </span>
+    <span class="valor">{{ valorOuTraco(sessao().valor) }}</span>
+  </button>
+  @if (whatsapp(); as link) {
+    <a class="botao-whats" [href]="link" target="_blank" rel="noopener">
+      <app-icone-whatsapp />
+      Confirmar
+    </a>
+  }
+</article>

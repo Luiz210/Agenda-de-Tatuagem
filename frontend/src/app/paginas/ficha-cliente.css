@@ -1,0 +1,21 @@
+.voltar { color: var(--suave); display: inline-block; margin-bottom: 0.75rem; text-decoration: none; }
+.voltar:hover { color: var(--texto); }
+.cabecalho { align-items: end; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; margin-bottom: 1rem; }
+.contatos { color: var(--suave); display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; margin: 0.3rem 0 0; }
+.acoes { align-items: center; display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.observacoes { background: var(--papel); border-left: 4px solid var(--noite); border-radius: 8px; margin: 0 0 1.25rem; padding: 0.7rem 1rem; white-space: pre-line; }
+.numeros { background: var(--noite); border-radius: 14px; color: #fff; display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); margin-bottom: 2rem; }
+.numeros div { display: grid; gap: 0.2rem; padding: 1rem 1.3rem; }
+.numeros span { color: #b3b3b3; font-size: 0.85rem; }
+.numeros strong { font: 700 1.6rem/1.1 var(--titulo); }
+.titulo-secao { font-size: 1.35rem; margin-bottom: 0.75rem; }
+.tatuagens { display: grid; gap: 0.75rem; grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr)); list-style: none; margin: 0 0 2rem; padding: 0; }
+.tatuagens button { background: var(--papel); border: 1px solid var(--linha); border-radius: 12px; color: inherit; cursor: pointer; display: grid; font: inherit; grid-template-columns: 6rem minmax(0, 1fr); height: 100%; overflow: hidden; padding: 0; text-align: left; width: 100%; }
+.tatuagens button:hover { border-color: var(--texto); }
+.tatuagens img, .sem-imagem { height: 100%; min-height: 7.5rem; object-fit: cover; width: 6rem; }
+.sem-imagem { align-items: center; background: var(--noite-2); color: #8c8c8c; display: flex; font-size: 0.75rem; justify-content: center; text-align: center; }
+.texto { display: grid; gap: 0.15rem; padding: 0.75rem 0.9rem; }
+.texto small { color: var(--suave); }
+.texto .proxima { color: var(--vermelho); font-weight: 600; }
+.pago { font-weight: 600; margin-top: 0.3rem; }
+footer { align-items: center; border-top: 1px solid var(--linha); display: flex; flex-wrap: wrap; gap: 0.75rem; padding-top: 1rem; }

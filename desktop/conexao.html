@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+  <title>Conexão da Agenda de Tatuagem</title>
+  <style>
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; margin: 0; }
+    body { background: #000; color: #000; display: flex; font: 400 1rem/1.5 'Segoe UI', sans-serif; justify-content: center; padding: 2rem 1rem; }
+    main { align-self: center; background: #fff; border-radius: 14px; display: grid; gap: 1rem; max-width: 34rem; padding: 2rem; width: 100%; }
+    h1 { font-size: 1.6rem; line-height: 1.2; margin: 0; }
+    .opcao { border: 1px solid #d4d4d4; border-radius: 10px; cursor: pointer; display: grid; gap: 0.2rem; grid-template-columns: auto 1fr; padding: 0.8rem; column-gap: 0.6rem; }
+    .opcao:has(input:checked) { border-color: #d90429; box-shadow: inset 0 0 0 1px #d90429; }
+    .opcao input { margin-top: 0.3rem; }
+    .opcao small, .ajuda { color: #555; font-size: 0.85rem; grid-column: 2; margin: 0; }
+    .campo { display: grid; gap: 0.25rem; font-size: 0.9rem; font-weight: 600; }
+    input[type=text] { border: 1px solid #d4d4d4; border-radius: 6px; font: inherit; font-weight: 400; padding: 0.5rem 0.6rem; width: 100%; }
+    .marcar { align-items: start; display: flex; font-size: 0.95rem; gap: 0.5rem; }
+    .marcar input { margin-top: 0.3rem; }
+    #dados { background: #f2f2f2; border-radius: 10px; display: grid; gap: 0.35rem; padding: 0.8rem; }
+    #dados p { margin: 0; }
+    strong.valor { font-family: Consolas, monospace; overflow-wrap: anywhere; }
+    button { background: #000; border: 1px solid #000; border-radius: 8px; color: #fff; cursor: pointer; font: 600 1rem 'Segoe UI', sans-serif; padding: 0.7rem; }
+    #erro { color: #b00020; font-size: 0.9rem; margin: 0; }
+    [hidden] { display: none !important; }
+    :focus-visible { outline: 2px solid #d90429; outline-offset: 2px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Como este computador vai usar a Agenda de Tatuagem?</h1>
+
+    <label class="opcao">
+      <input type="radio" name="modo" value="local" checked>
+      <strong>Usar neste computador</strong>
+      <small>Os dados ficam aqui, e só as contas deste computador veem os registros.</small>
+    </label>
+
+    <label class="marcar" id="blocoCompartilhar">
+      <input type="checkbox" id="compartilhar">
+      <span>Deixar outros computadores da minha casa conectarem aqui</span>
+    </label>
+
+    <label class="opcao">
+      <input type="radio" name="modo" value="cliente">
+      <strong>Conectar a outro computador</strong>
+      <small>Os dados ficam no outro computador, que precisa estar ligado com a Agenda de Tatuagem aberta.</small>
+    </label>
+
+    <label class="campo" id="blocoServidor" hidden>
+      Nome ou IP do outro computador
+      <input type="text" id="servidor" autocomplete="off" spellcheck="false">
+    </label>
+
+    <section id="dados" hidden>
+      <p>Para conectar outro computador, use:</p>
+      <p>Nome: <strong class="valor" id="nome"></strong></p>
+      <p>IP: <strong class="valor" id="ips"></strong></p>
+      <p>Código de convite: <strong class="valor" id="codigo"></strong></p>
+      <p class="ajuda">Se o Windows perguntar, permita o acesso em redes privadas.</p>
+    </section>
+
+    <p id="erro" role="alert" hidden></p>
+    <button type="button" id="salvar">Salvar e abrir a agenda</button>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const opcoes = document.querySelectorAll('input[name=modo]');
+    const modoEscolhido = () => document.querySelector('input[name=modo]:checked').value;
+    let codigoSalvo = false;
+
+    function atualizar() {
+      const cliente = modoEscolhido() === 'cliente';
+      $('blocoServidor').hidden = !cliente;
+      $('blocoCompartilhar').hidden = cliente;
+      $('dados').hidden = cliente || !$('compartilhar').checked || !codigoSalvo;
+    }
+
+    opcoes.forEach((o) => o.addEventListener('change', atualizar));
+    $('compartilhar').addEventListener('change', atualizar);
+
+    window.agendaApp.lerConexao().then((c) => {
+      document.querySelector(`input[name=modo][value=${c.modo}]`).checked = true;
+      $('compartilhar').checked = c.compartilhar;
+      $('servidor').value = c.servidor;
+      $('nome').textContent = c.nomeComputador;
+      $('ips').textContent = c.ips.join(', ') || 'não encontrado';
+      $('codigo').textContent = c.codigoConvite;
+      codigoSalvo = Boolean(c.compartilhar && c.codigoConvite);
+      atualizar();
+    });
+
+    $('salvar').addEventListener('click', () => {
+      const modo = modoEscolhido();
+      const servidor = $('servidor').value.trim();
+      if (modo === 'cliente' && !/^[\w.-]+$/.test(servidor)) {
+        $('erro').textContent = 'Informe o nome ou o IP do outro computador, como LUIZ ou 192.168.0.10.';
+        $('erro').hidden = false;
+        return;
+      }
+      window.agendaApp.salvarConexao({ modo, servidor, compartilhar: $('compartilhar').checked });
+    });
+  </script>
+</body>
+</html>

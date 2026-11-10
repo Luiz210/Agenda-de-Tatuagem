@@ -1,0 +1,142 @@
+<dialog #dialogo class="modal" (close)="fechar.emit()" (click)="fecharPeloFundo($event)">
+  <form class="modal-corpo" (submit)="enviar($event)">
+    <header class="modal-topo">
+      <div>
+        <h2>{{ clienteId() && !data() ? 'Nova tatuagem' : 'Agendar sessão' }}</h2>
+        @if (data()) {
+          <p>{{ dataPorExtenso(data()!) }}</p>
+        }
+      </div>
+      <button type="button" class="botao secundario fechar" aria-label="Fechar" (click)="dialogo.close()">✕</button>
+    </header>
+
+    @if (erro()) {
+      <p class="aviso-erro" role="alert">{{ erro() }}</p>
+    }
+
+    <fieldset>
+      <legend>Cliente</legend>
+      <label class="campo">
+        <span class="oculto">Cliente</span>
+        <select required [value]="escolhaCliente()" (change)="trocarCliente($any($event.target).value)">
+          <option value="" disabled>Escolha o cliente</option>
+          @for (c of clientes(); track c.id) {
+            <option [value]="c.id" [selected]="String(c.id) === escolhaCliente()">{{ c.nome }}</option>
+          }
+          <option [value]="NOVO">+ Cadastrar cliente novo</option>
+        </select>
+      </label>
+      @if (novoCliente()) {
+        <div class="linha-campos novo-cliente">
+          <label class="campo">
+            Nome do cliente
+            <input name="clienteNome" required maxlength="120" autocomplete="off" />
+          </label>
+          <label class="campo">
+            <span>Telefone <small>(opcional)</small></span>
+            <input name="clienteTelefone" type="tel" inputmode="tel" placeholder="(16) 99999-9999" autocomplete="off" />
+          </label>
+        </div>
+      }
+    </fieldset>
+
+    <fieldset>
+      <legend>Tatuagem</legend>
+      @if (tatuagensDoCliente().length) {
+        <div class="opcoes">
+          <label class="opcao">
+            <input type="radio" name="tatuagem" [value]="NOVA" [checked]="novaTatuagem()" (change)="trocarTatuagem(NOVA)" />
+            <span>Nova tatuagem</span>
+          </label>
+          @for (t of tatuagensDoCliente(); track t.id) {
+            <label class="opcao">
+              <input type="radio" name="tatuagem" [value]="t.id" [checked]="escolhaTatuagem() === String(t.id)" (change)="trocarTatuagem(String(t.id))" />
+              <span>Continuar: {{ resumoTatuagem(t) }}</span>
+            </label>
+          }
+        </div>
+      }
+      @if (novaTatuagem()) {
+        <label class="campo">
+          Descrição
+          <textarea name="descricao" required maxlength="500" placeholder="Ex.: fechamento de braço, tema japonês"></textarea>
+        </label>
+        <div class="linha-campos">
+          <label class="campo">
+            Local do corpo
+            <input name="localCorpo" list="locais-corpo" maxlength="80" autocomplete="off" />
+            <datalist id="locais-corpo">
+              @for (l of locais; track l) {
+                <option [value]="l"></option>
+              }
+            </datalist>
+          </label>
+          <label class="campo">
+            Valor total (R$)
+            <input inputmode="decimal" placeholder="0,00" [value]="valorTotal()" (input)="digitarTotal($any($event.target).value)" />
+          </label>
+        </div>
+        <div class="campo">
+          <span>Imagens <small>(referência, desenho)</small></span>
+          <div class="fotos">
+            @for (f of fotos(); track f.url; let i = $index) {
+              <figure>
+                <img [src]="f.url" [alt]="f.arquivo.name" />
+                <button type="button" aria-label="Tirar imagem" (click)="tirarFoto(i)">✕</button>
+              </figure>
+            }
+            <label class="adicionar-foto">
+              <input type="file" accept="image/*" multiple (change)="escolherFotos($event)" />
+              + Adicionar
+            </label>
+          </div>
+        </div>
+      } @else if (tatuagemEscolhida(); as t) {
+        <p class="vazio-texto">
+          Já pago: {{ valorOuTraco(t.totalPago) }} de {{ valorOuTraco(t.valorTotal) }}.
+        </p>
+      }
+    </fieldset>
+
+    <fieldset>
+      <legend>Sessão</legend>
+      @if (!data()) {
+        <label class="opcao">
+          <input type="checkbox" [checked]="agendarSessao()" (change)="agendarSessao.set($any($event.target).checked)" />
+          <span>Já marcar um horário</span>
+        </label>
+      }
+      @if (agendarSessao()) {
+        <div class="linha-campos">
+          @if (!data()) {
+            <label class="campo">
+              Dia
+              <input type="date" required [value]="dia()" (input)="dia.set($any($event.target).value)" />
+            </label>
+          }
+          <label class="campo">
+            Horário
+            <input name="hora" type="time" required value="10:00" />
+          </label>
+          <label class="campo">
+            Duração
+            <select name="duracao">
+              <option value="">Não sei</option>
+              @for (d of duracoes; track d) {
+                <option [value]="d" [selected]="d === 180">{{ duracaoEmTexto(d) }}</option>
+              }
+            </select>
+          </label>
+          <label class="campo">
+            Valor desta sessão (R$)
+            <input inputmode="decimal" placeholder="0,00" [value]="valorSessao()" (input)="digitarValorSessao($any($event.target).value)" />
+          </label>
+        </div>
+      }
+    </fieldset>
+
+    <div class="acoes">
+      <button class="botao" [disabled]="ocupado()">{{ ocupado() ? 'Salvando...' : 'Salvar' }}</button>
+    </div>
+  </form>
+</dialog>

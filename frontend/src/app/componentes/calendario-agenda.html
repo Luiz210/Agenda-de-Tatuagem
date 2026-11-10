@@ -1,0 +1,43 @@
+<div class="grade" role="grid">
+  <div class="linha" role="row">
+    @for (d of diasSemana; track d) {
+      <span class="cabeca" role="columnheader">{{ d }}</span>
+    }
+  </div>
+  @for (semana of semanas(); track $index) {
+    <div class="linha" role="row">
+      @for (dia of semana; track $index) {
+        @if (dia) {
+          @let doDia = porDia().get(dia) ?? [];
+          <button
+            type="button"
+            role="gridcell"
+            class="dia"
+            [class.passado]="dia < hoje()"
+            [class.hoje]="dia === hoje()"
+            [class.ocupado]="doDia.length > 0"
+            [class.selecionado]="dia === selecionado()"
+            [attr.aria-label]="rotulo(dia)"
+            [attr.aria-pressed]="dia === selecionado()"
+            (click)="selecionar.emit(dia)"
+          >
+            <span class="numero">{{ diaNumero(dia) }}</span>
+            @for (s of doDia.slice(0, visiveis); track s.id) {
+              <span class="chip" [class.feita]="s.status === 'REALIZADA'">
+                <b>{{ horaCurta(s.hora) }}</b><span>{{ primeiroNome(s.clienteNome) }}</span>
+              </span>
+            }
+            @if (doDia.length > visiveis) {
+              <span class="mais">+{{ doDia.length - visiveis }}</span>
+            }
+            @if (doDia.length) {
+              <span class="ponto" aria-hidden="true">{{ doDia.length }}</span>
+            }
+          </button>
+        } @else {
+          <span class="vazio" role="gridcell"></span>
+        }
+      }
+    </div>
+  }
+</div>

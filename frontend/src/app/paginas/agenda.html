@@ -1,0 +1,47 @@
+<header class="cabecalho">
+  <h1 class="titulo-pagina">{{ titulo() }}</h1>
+  <div class="navegacao">
+    <button type="button" class="botao secundario" aria-label="Mês anterior" (click)="mudar(-1)">‹</button>
+    <button type="button" class="botao secundario" (click)="irParaHoje()">Hoje</button>
+    <button type="button" class="botao secundario" aria-label="Próximo mês" (click)="mudar(1)">›</button>
+  </div>
+</header>
+
+@if (erro()) {
+  <p class="aviso-erro" role="alert">{{ erro() }}</p>
+}
+
+<div class="layout">
+  <app-calendario-agenda
+    [ano]="ano()"
+    [mes]="mes()"
+    [hoje]="hoje"
+    [selecionado]="dia()"
+    [sessoes]="sessoes()"
+    (selecionar)="dia.set($event)"
+  />
+
+  <aside class="painel" aria-live="polite">
+    <div class="painel-topo">
+      <div>
+        <h2>{{ diaExtenso() }}</h2>
+        @if (doDia().length) {
+          <p class="sub-pagina">{{ doDia().length }} {{ doDia().length === 1 ? 'sessão' : 'sessões' }} · {{ totalDoDia() }}</p>
+        }
+      </div>
+    </div>
+    <button type="button" class="botao" (click)="agendando.set(true)">+ Agendar neste dia</button>
+    @for (s of doDia(); track s.id) {
+      <app-cartao-sessao [sessao]="s" [urlImagem]="imagem(s)" (abrir)="aberta.set($event)" />
+    } @empty {
+      <p class="vazio-texto">Nenhuma sessão neste dia.</p>
+    }
+  </aside>
+</div>
+
+@if (agendando()) {
+  <app-modal-agendar [data]="dia()" (fechar)="agendando.set(false)" />
+}
+@if (aberta(); as s) {
+  <app-modal-tatuagem [tatuagemId]="s.tatuagemId" [sessaoId]="s.id" (fechar)="aberta.set(null)" />
+}

@@ -1,0 +1,94 @@
+<a routerLink="/clientes" class="voltar">‹ Clientes</a>
+
+@if (erro()) {
+  <p class="aviso-erro" role="alert">{{ erro() }}</p>
+}
+
+@if (ficha(); as f) {
+  <header class="cabecalho">
+    <div>
+      <h1 class="titulo-pagina">{{ f.cliente.nome }}</h1>
+      <p class="contatos">
+        @if (f.cliente.telefone) {
+          <span>{{ telefoneFormatado(f.cliente.telefone) }}</span>
+        } @else {
+          <span>Sem telefone</span>
+        }
+        @if (f.cliente.instagram) {
+          <span>{{ '@' + f.cliente.instagram }}</span>
+        }
+      </p>
+    </div>
+    <div class="acoes">
+      @if (whatsapp(); as link) {
+        <a class="botao-whats" [href]="link" target="_blank" rel="noopener"><app-icone-whatsapp /> Conversar</a>
+      }
+      <button type="button" class="botao secundario" (click)="editando.set(true)">Editar</button>
+      <button type="button" class="botao" (click)="novaTatuagem.set(true)">+ Nova tatuagem</button>
+    </div>
+  </header>
+
+  @if (f.cliente.observacoes) {
+    <p class="observacoes">{{ f.cliente.observacoes }}</p>
+  }
+
+  <section class="numeros" aria-label="Resumo do cliente">
+    <div><span>Tatuagens</span><strong>{{ f.tatuagens.length }}</strong></div>
+    <div><span>Já pagou</span><strong>{{ valorOuTraco(f.cliente.totalPago) }}</strong></div>
+    <div><span>Total contratado</span><strong>{{ valorOuTraco(totalContratado()) }}</strong></div>
+    <div><span>Última sessão</span><strong>{{ f.cliente.ultimaSessao ? dataCurta(f.cliente.ultimaSessao) : '—' }}</strong></div>
+  </section>
+
+  <h2 class="titulo-secao">Tatuagens</h2>
+  <ul class="tatuagens">
+    @for (t of f.tatuagens; track t.id) {
+      <li>
+        <button type="button" (click)="aberta.set(t.id)">
+          @if (t.imagens[0]; as capa) {
+            <img [src]="agenda.urlDaImagem(capa.id)" alt="" loading="lazy" />
+          } @else {
+            <span class="sem-imagem" aria-hidden="true">Sem imagem</span>
+          }
+          <span class="texto">
+            <strong>{{ t.descricao }}</strong>
+            @if (t.localCorpo) {
+              <small>{{ t.localCorpo }}</small>
+            }
+            <small>Sessões feitas: {{ sessoesFeitas(t) }}</small>
+            @if (proximaSessao(t); as p) {
+              <small class="proxima">Próxima: {{ dataCurta(p.data) }} às {{ p.hora.slice(0, 5) }}</small>
+            }
+            <span class="pago">
+              Pago {{ valorOuTraco(t.totalPago) }}
+              @if (t.valorTotal != null) {
+                de {{ valorOuTraco(t.valorTotal) }}
+              }
+            </span>
+          </span>
+        </button>
+      </li>
+    } @empty {
+      <li class="vazio-texto">Nenhuma tatuagem na ficha ainda.</li>
+    }
+  </ul>
+
+  <footer>
+    @if (confirmarRemocao()) {
+      <span>Remover {{ f.cliente.nome }}?</span>
+      <button type="button" class="botao" (click)="remover()">Sim, remover</button>
+      <button type="button" class="link-acao" (click)="confirmarRemocao.set(false)">Não</button>
+    } @else {
+      <button type="button" class="link-acao" (click)="confirmarRemocao.set(true)">Remover cliente</button>
+    }
+  </footer>
+
+  @if (editando()) {
+    <app-modal-cliente [cliente]="f.cliente" (fechar)="editando.set(false)" />
+  }
+  @if (novaTatuagem()) {
+    <app-modal-agendar [clienteId]="f.cliente.id" (salvo)="aberta.set($event)" (fechar)="novaTatuagem.set(false)" />
+  }
+  @if (aberta(); as id) {
+    <app-modal-tatuagem [tatuagemId]="id" (fechar)="aberta.set(null)" />
+  }
+}

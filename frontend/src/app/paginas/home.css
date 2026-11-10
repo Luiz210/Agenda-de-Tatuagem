@@ -1,0 +1,13 @@
+.cabecalho { align-items: end; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; margin-bottom: 1.5rem; }
+.numeros { background: var(--noite); border-radius: 14px; color: #fff; display: grid; gap: 1px; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); margin-bottom: 2rem; overflow: hidden; }
+.numeros div { background: var(--noite); display: grid; gap: 0.2rem; padding: 1.1rem 1.4rem; }
+.numeros div + div { box-shadow: -1px 0 0 var(--noite-3); }
+.numeros span { color: #b3b3b3; font-size: 0.85rem; }
+.numeros strong { font: 700 clamp(1.5rem, 3vw, 2.1rem)/1.1 var(--titulo); }
+.numeros div:nth-child(2) strong { color: var(--vermelho-claro); }
+.bloco { display: grid; gap: 0.6rem; margin-bottom: 2rem; }
+.bloco h2 { font-size: 1.35rem; margin-bottom: 0.2rem; }
+.titulo-bloco { align-items: baseline; display: flex; justify-content: space-between; }
+.sem-hoje { background: var(--papel); border: 1px dashed var(--linha); border-radius: 12px; display: grid; gap: 0.5rem; padding: 1.1rem; }
+.sem-hoje > p:first-child { font: 600 1.1rem var(--titulo); margin: 0; }
+.rotulo-proxima { color: var(--vermelho); font-size: 0.85rem; font-weight: 600; letter-spacing: 0.04em; margin: 0.4rem 0 0; text-transform: uppercase; }

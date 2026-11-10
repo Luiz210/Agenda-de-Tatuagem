@@ -1,0 +1,19 @@
+# Dependências e saídas de build
+node_modules/
+frontend/dist/
+frontend/.angular/
+backend/target/
+desktop/dist/
+desktop/ui/
+desktop/backend/
+
+# IDEs
+.idea/
+.vscode/
+.settings/
+.project
+.classpath
+*.iml
+
+# Nunca suba a chave do GitHub
+.env

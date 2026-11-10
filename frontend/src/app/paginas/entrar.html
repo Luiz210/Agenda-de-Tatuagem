@@ -1,0 +1,59 @@
+<main class="fundo">
+  <div class="cartao">
+    <app-logo [tamanho]="40" />
+    <h1>{{ modo() === 'entrar' ? 'Entrar na Agenda' : 'Criar sua conta' }}</h1>
+
+    @if (erro()) {
+      <p class="aviso-erro" role="alert">{{ erro() }}</p>
+    }
+
+    <form (submit)="enviar($event)">
+      @if (modo() === 'entrar') {
+        <label class="campo">
+          Nome de usuário ou e-mail
+          <input name="identificador" required autocomplete="username" />
+        </label>
+        <label class="campo">
+          Senha
+          <input name="senha" type="password" required autocomplete="current-password" />
+        </label>
+        <button class="botao" [disabled]="ocupado()">Entrar</button>
+      } @else {
+        <label class="campo">
+          Nome
+          <input name="nome" required maxlength="100" autocomplete="name" />
+        </label>
+        <label class="campo">
+          Nome de usuário
+          <input name="nomeUsuario" required minlength="3" maxlength="50" autocomplete="username" />
+        </label>
+        <label class="campo">
+          E-mail
+          <input name="email" type="email" required maxlength="150" autocomplete="email" />
+        </label>
+        <label class="campo">
+          Senha
+          <input name="senha" type="password" required minlength="8" autocomplete="new-password" />
+        </label>
+        <label class="campo">
+          Confirme a senha
+          <input name="confirmacao" type="password" required minlength="8" autocomplete="new-password" />
+        </label>
+        @if (pedeConvite) {
+          <label class="campo">
+            Código de convite
+            <input name="convite" required autocomplete="off" />
+          </label>
+        }
+        <p class="nota">Guarde bem sua senha: por enquanto, não é possível recuperá-la.</p>
+        <button class="botao" [disabled]="ocupado()">Criar conta</button>
+      }
+    </form>
+
+    @if (modo() === 'entrar') {
+      <button type="button" class="link-acao" (click)="trocar('cadastrar')">Criar uma conta</button>
+    } @else {
+      <button type="button" class="link-acao" (click)="trocar('entrar')">Já tenho uma conta</button>
+    }
+  </div>
+</main>

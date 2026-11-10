@@ -1,0 +1,31 @@
+:host { --largura-modal: 44rem; }
+.link-cliente { color: var(--texto); font-weight: 600; }
+.valores { align-items: end; background: var(--noite); border-radius: 12px; color: #fff; display: flex; flex-wrap: wrap; gap: 1rem 2rem; padding: 1rem 1.25rem; }
+.valores div { display: grid; }
+.valores span { color: #b3b3b3; font-size: 0.8rem; }
+.valores strong { font: 700 1.35rem var(--titulo); }
+.valores strong.falta { color: var(--vermelho-claro); }
+.valores .link-acao { color: #d9d9d9; margin-left: auto; }
+section { display: grid; gap: 0.6rem; }
+.titulo-secao { align-items: center; display: flex; justify-content: space-between; }
+.galeria { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.miniatura { background: none; border: 0; border-radius: 8px; cursor: zoom-in; height: 5.5rem; overflow: hidden; padding: 0; width: 5.5rem; }
+.miniatura img { height: 100%; object-fit: cover; width: 100%; }
+.adicionar-foto { align-items: center; border: 1px dashed var(--suave); border-radius: 8px; color: var(--suave); cursor: pointer; display: flex; font-size: 0.85rem; height: 5.5rem; justify-content: center; width: 5.5rem; }
+.adicionar-foto:hover { border-color: var(--texto); color: var(--texto); }
+.adicionar-foto input { display: none; }
+.ampliada { margin: 0; }
+.ampliada img { background: var(--fundo); border-radius: 10px; display: block; max-height: 55vh; max-width: 100%; }
+.ampliada figcaption { margin-top: 0.4rem; }
+.lista { display: grid; gap: 0.4rem; list-style: none; margin: 0; padding: 0; }
+.lista > li { border: 1px solid var(--linha); border-radius: 10px; padding: 0.6rem 0.8rem; }
+.lista > li.vazio-texto { border: 0; padding: 0; }
+.lista > li.destaque { border-color: var(--vermelho); box-shadow: inset 3px 0 0 var(--vermelho); }
+.lista > li.cancelada { opacity: 0.7; }
+.linha-sessao { align-items: center; display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; justify-content: space-between; }
+.linha-sessao > div:first-child { display: grid; gap: 0.15rem; }
+.meta { align-items: center; color: var(--suave); display: flex; flex-wrap: wrap; font-size: 0.85rem; gap: 0.5rem; }
+.obs { color: var(--suave); font-size: 0.85rem; }
+.acoes.pequenas { gap: 0.4rem 0.8rem; }
+.bloco { display: grid; gap: 0.75rem; }
+footer { align-items: center; border-top: 1px solid var(--linha); display: flex; flex-wrap: wrap; gap: 0.75rem; padding-top: 0.9rem; }

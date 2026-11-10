@@ -1,0 +1,44 @@
+<header class="cabecalho">
+  <div>
+    <h1 class="titulo-pagina">Clientes</h1>
+    <p class="sub-pagina">{{ clientes().length }} {{ clientes().length === 1 ? 'cliente' : 'clientes' }}</p>
+  </div>
+  <button type="button" class="botao" (click)="cadastrando.set(true)">+ Novo cliente</button>
+</header>
+
+@if (erro()) {
+  <p class="aviso-erro" role="alert">{{ erro() }}</p>
+}
+
+<label class="campo busca">
+  <span class="oculto">Buscar cliente</span>
+  <input type="search" placeholder="Buscar por nome, telefone ou Instagram" [value]="busca()" (input)="busca.set($any($event.target).value)" />
+</label>
+
+<ul class="lista">
+  @for (c of filtrados(); track c.id) {
+    <li>
+      <button type="button" (click)="abrir(c)">
+        <span class="inicial" aria-hidden="true">{{ c.nome.charAt(0).toUpperCase() }}</span>
+        <span class="nome">
+          <strong>{{ c.nome }}</strong>
+          <small>
+            {{ c.telefone ? telefoneFormatado(c.telefone) : 'Sem telefone' }}
+            @if (c.instagram) {
+              · {{ '@' + c.instagram }}
+            }
+          </small>
+        </span>
+        <span class="dado"><small>Tatuagens</small>{{ c.tatuagens }}</span>
+        <span class="dado"><small>Já pagou</small>{{ valorOuTraco(c.totalPago) }}</span>
+        <span class="dado"><small>Última sessão</small>{{ c.ultimaSessao ? dataCurta(c.ultimaSessao) : '—' }}</span>
+      </button>
+    </li>
+  } @empty {
+    <li class="vazio-texto">{{ busca() ? 'Nenhum cliente encontrado.' : 'Nenhum cliente cadastrado ainda.' }}</li>
+  }
+</ul>
+
+@if (cadastrando()) {
+  <app-modal-cliente (salvo)="criado($event)" (fechar)="cadastrando.set(false)" />
+}

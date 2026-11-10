@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'">
+  <title>Agenda de Tatuagem</title>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body {
+      align-items: center;
+      background: #000;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      font: 400 1rem/1.5 'Segoe UI', sans-serif;
+      justify-content: center;
+      padding: 0 2rem;
+      text-align: center;
+    }
+    h1 { font-size: 2.5rem; font-weight: 700; margin: 0 0 0.5rem; }
+    p { color: #d9d9d9; margin: 0; max-width: 40rem; overflow-wrap: anywhere; }
+    .faixa { background: #d90429; border-radius: 999px; height: 0.6rem; margin-bottom: 1.5rem; width: 6rem; }
+  </style>
+</head>
+<body>
+  <div class="faixa"></div>
+  <h1>Agenda de Tatuagem</h1>
+  <p id="mensagem">Iniciando. Isso pode levar alguns minutos logo depois de ligar o computador.</p>
+  <script>
+    const erro = new URLSearchParams(location.search).get('erro');
+    if (erro) document.getElementById('mensagem').textContent = erro;
+    const aguardando = new URLSearchParams(location.search).get('aguardando');
+    if (aguardando) {
+      document.getElementById('mensagem').textContent =
+        `Aguardando o computador ${aguardando}. Ele precisa estar ligado e com a Agenda de Tatuagem aberta.`;
+    }
+  </script>
+</body>
+</html>

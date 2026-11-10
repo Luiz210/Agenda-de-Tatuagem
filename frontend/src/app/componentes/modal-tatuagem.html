@@ -1,0 +1,252 @@
+<dialog #dialogo class="modal" (close)="fechar.emit()" (click)="fecharPeloFundo($event)">
+  <div class="modal-corpo">
+    <header class="modal-topo">
+      <div>
+        @if (tatuagem(); as t) {
+          <h2>{{ t.descricao }}</h2>
+          <p>
+            <a class="link-cliente" [routerLink]="['/clientes', t.clienteId]" (click)="dialogo.close()">{{ t.clienteNome }}</a>
+            @if (t.localCorpo) {
+              · {{ t.localCorpo }}
+            }
+          </p>
+        } @else {
+          <h2>Carregando...</h2>
+        }
+      </div>
+      <button type="button" class="botao secundario fechar" aria-label="Fechar" (click)="dialogo.close()">✕</button>
+    </header>
+
+    @if (erro()) {
+      <p class="aviso-erro" role="alert">{{ erro() }}</p>
+    }
+
+    @if (tatuagem(); as t) {
+      <!-- Valores -->
+      @if (editandoDados()) {
+        <form class="bloco" (submit)="salvarDados($event)">
+          <label class="campo">
+            Descrição
+            <textarea name="descricao" required maxlength="500">{{ t.descricao }}</textarea>
+          </label>
+          <div class="linha-campos">
+            <label class="campo">
+              Local do corpo
+              <input name="localCorpo" list="locais-corpo-edicao" maxlength="80" [value]="t.localCorpo ?? ''" />
+              <datalist id="locais-corpo-edicao">
+                @for (l of locais; track l) {
+                  <option [value]="l"></option>
+                }
+              </datalist>
+            </label>
+            <label class="campo">
+              Valor total (R$)
+              <input name="valorTotal" inputmode="decimal" [value]="t.valorTotal ?? ''" />
+            </label>
+          </div>
+          <div class="acoes">
+            <button class="botao" [disabled]="ocupado()">Salvar</button>
+            <button type="button" class="link-acao" (click)="editandoDados.set(false)">Cancelar</button>
+          </div>
+        </form>
+      } @else {
+        <div class="valores">
+          <div><span>Valor total</span><strong>{{ valorOuTraco(t.valorTotal) }}</strong></div>
+          <div><span>Já pago</span><strong>{{ valorOuTraco(t.totalPago) }}</strong></div>
+          <div><span>Falta</span><strong [class.falta]="falta()">{{ valorOuTraco(falta()) }}</strong></div>
+          <button type="button" class="link-acao" (click)="editandoDados.set(true)">Editar dados</button>
+        </div>
+      }
+
+      <!-- Imagens -->
+      <section>
+        <h3>Imagens</h3>
+        @if (ampliada(); as id) {
+          <figure class="ampliada">
+            <img [src]="agenda.urlDaImagem(id)" alt="Imagem da tatuagem ampliada" />
+            <figcaption class="acoes">
+              <button type="button" class="link-acao" (click)="ampliada.set(null)">Voltar</button>
+              <button type="button" class="link-acao" [disabled]="ocupado()" (click)="removerImagem(id)">Remover imagem</button>
+            </figcaption>
+          </figure>
+        } @else {
+          <div class="galeria">
+            @for (i of t.imagens; track i.id) {
+              <button type="button" class="miniatura" [attr.aria-label]="'Ampliar ' + i.nome" (click)="ampliada.set(i.id)">
+                <img [src]="agenda.urlDaImagem(i.id)" [alt]="i.nome" loading="lazy" />
+              </button>
+            }
+            <label class="adicionar-foto">
+              <input type="file" accept="image/*" multiple (change)="adicionarImagens($event)" />
+              + Adicionar
+            </label>
+          </div>
+        }
+      </section>
+
+      <!-- Sessões -->
+      <section>
+        <div class="titulo-secao">
+          <h3>Sessões</h3>
+          @if (editandoSessao() !== 'nova') {
+            <button type="button" class="link-acao" (click)="editandoSessao.set('nova')">+ Nova sessão</button>
+          }
+        </div>
+        <ul class="lista">
+          @for (s of t.sessoes; track s.id) {
+            <li [class.destaque]="s.id === sessaoId()" [class.cancelada]="s.status === 'CANCELADA'">
+              @if (editandoSessao() === s.id) {
+                <ng-container *ngTemplateOutlet="formSessao; context: { $implicit: s }" />
+              } @else {
+                <div class="linha-sessao">
+                  <div>
+                    <strong>{{ dataPorExtenso(s.data) }}, {{ horaCurta(s.hora) }}</strong>
+                    <span class="meta">
+                      <span [class]="'etiqueta ' + s.status.toLowerCase()">{{ rotulos[s.status] }}</span>
+                      @if (s.duracaoMinutos) {
+                        <span>{{ duracaoEmTexto(s.duracaoMinutos) }}</span>
+                      }
+                      <span>{{ valorOuTraco(s.valor) }}</span>
+                    </span>
+                    @if (s.observacao) {
+                      <span class="obs">{{ s.observacao }}</span>
+                    }
+                  </div>
+                  <div class="acoes pequenas">
+                    @if (whatsapp(s); as link) {
+                      <a class="botao-whats" [href]="link" target="_blank" rel="noopener"><app-icone-whatsapp /> Confirmar</a>
+                    }
+                    @if (s.status === 'AGENDADA') {
+                      <button type="button" class="link-acao" [disabled]="ocupado()" (click)="mudarStatus(s, 'REALIZADA')">Marcar como feita</button>
+                      <button type="button" class="link-acao" (click)="editandoSessao.set(s.id)">Remarcar</button>
+                      <button type="button" class="link-acao" [disabled]="ocupado()" (click)="mudarStatus(s, 'CANCELADA')">Cancelar</button>
+                    } @else {
+                      <button type="button" class="link-acao" [disabled]="ocupado()" (click)="mudarStatus(s, 'AGENDADA')">Voltar para agendada</button>
+                      <button type="button" class="link-acao" [disabled]="ocupado()" (click)="removerSessao(s)">Remover</button>
+                    }
+                  </div>
+                </div>
+              }
+            </li>
+          } @empty {
+            <li class="vazio-texto">Nenhuma sessão marcada.</li>
+          }
+          @if (editandoSessao() === 'nova') {
+            <li><ng-container *ngTemplateOutlet="formSessao; context: { $implicit: null }" /></li>
+          }
+        </ul>
+      </section>
+
+      <!-- Pagamentos -->
+      <section>
+        <div class="titulo-secao">
+          <h3>Pagamentos</h3>
+          @if (!novoPagamento()) {
+            <button type="button" class="link-acao" (click)="novoPagamento.set(true)">+ Registrar pagamento</button>
+          }
+        </div>
+        <ul class="lista">
+          @for (p of t.pagamentos; track p.id) {
+            <li class="linha-sessao">
+              <div>
+                <strong>{{ valorOuTraco(p.valor) }}</strong>
+                <span class="meta">
+                  <span>{{ dataCurta(p.data) }}</span>
+                  @if (p.forma) {
+                    <span>{{ p.forma }}</span>
+                  }
+                  @if (p.observacao) {
+                    <span>{{ p.observacao }}</span>
+                  }
+                </span>
+              </div>
+              <button type="button" class="link-acao" [disabled]="ocupado()" (click)="removerPagamento(p.id)">Remover</button>
+            </li>
+          } @empty {
+            @if (!novoPagamento()) {
+              <li class="vazio-texto">Nenhum pagamento registrado.</li>
+            }
+          }
+          @if (novoPagamento()) {
+            <li>
+              <form class="bloco" (submit)="salvarPagamento($event)">
+                <div class="linha-campos">
+                  <label class="campo">
+                    Valor (R$)
+                    <input name="valor" inputmode="decimal" required placeholder="0,00" />
+                  </label>
+                  <label class="campo">
+                    Forma
+                    <select name="forma">
+                      @for (f of formas; track f) {
+                        <option [value]="f">{{ f }}</option>
+                      }
+                    </select>
+                  </label>
+                  <label class="campo">
+                    Dia
+                    <input name="data" type="date" required [value]="hoje" />
+                  </label>
+                </div>
+                <label class="campo">
+                  <span>Observação <small>(ex.: sinal)</small></span>
+                  <input name="observacao" maxlength="200" />
+                </label>
+                <div class="acoes">
+                  <button class="botao" [disabled]="ocupado()">Salvar pagamento</button>
+                  <button type="button" class="link-acao" (click)="novoPagamento.set(false)">Cancelar</button>
+                </div>
+              </form>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <footer>
+        @if (confirmarRemocao()) {
+          <span>Remover a tatuagem com todas as sessões, pagamentos e imagens?</span>
+          <button type="button" class="botao" [disabled]="ocupado()" (click)="removerTatuagem()">Sim, remover</button>
+          <button type="button" class="link-acao" (click)="confirmarRemocao.set(false)">Não</button>
+        } @else {
+          <button type="button" class="link-acao" (click)="confirmarRemocao.set(true)">Remover tatuagem</button>
+        }
+      </footer>
+    }
+  </div>
+</dialog>
+
+<ng-template #formSessao let-s>
+  <form class="bloco" (submit)="salvarSessao($event, s)">
+    <div class="linha-campos">
+      <label class="campo">
+        Dia
+        <input name="data" type="date" required [value]="s?.data ?? hoje" />
+      </label>
+      <label class="campo">
+        Horário
+        <input name="hora" type="time" required [value]="s ? horaCurta(s.hora) : '10:00'" />
+      </label>
+      <label class="campo">
+        Duração
+        <select name="duracao">
+          <option value="">Não sei</option>
+          @for (d of duracoes; track d) {
+            <option [value]="d" [selected]="s ? d === s.duracaoMinutos : d === 180">{{ duracaoEmTexto(d) }}</option>
+          }
+        </select>
+      </label>
+      <label class="campo">
+        Valor (R$)
+        <input name="valor" inputmode="decimal" placeholder="0,00" [value]="s?.valor ?? (s ? '' : (falta() ?? ''))" />
+      </label>
+    </div>
+    <label class="campo">
+      Observação
+      <input name="observacao" maxlength="500" [value]="s?.observacao ?? ''" />
+    </label>
+    <div class="acoes">
+      <button class="botao" [disabled]="ocupado()">{{ s ? 'Salvar' : 'Agendar sessão' }}</button>
+      <button type="button" class="link-acao" (click)="editandoSessao.set(null)">Cancelar</button>
+    </div>
+  </form>
+</ng-template>
