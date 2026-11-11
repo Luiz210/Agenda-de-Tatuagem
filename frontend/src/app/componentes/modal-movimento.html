@@ -1,0 +1,51 @@
+<dialog #dialogo class="modal" (close)="fechar.emit()" (click)="fecharPeloFundo($event)">
+  <form class="modal-corpo" (submit)="enviar($event)">
+    <header class="modal-topo">
+      <div>
+        <h2>{{ titulo() }}</h2>
+        <p>{{ item().nome }} · {{ item().quantidade }} {{ unidade() }} em estoque</p>
+      </div>
+      <button type="button" class="botao secundario fechar" aria-label="Fechar" (click)="dialogo.close()">✕</button>
+    </header>
+
+    @if (erro()) {
+      <p class="aviso-erro" role="alert">{{ erro() }}</p>
+    }
+
+    <div class="linha-campos">
+      <label class="campo">
+        Quantidade ({{ unidade() }})
+        <input type="number" min="1" [attr.max]="tipo() === 'ENTRADA' ? null : item().quantidade" required
+          [value]="quantidade()" (input)="quantidade.set($any($event.target).value)" />
+      </label>
+      @if (tipo() === 'VENDA') {
+        <label class="campo">
+          Preço de cada (R$)
+          <input inputmode="decimal" placeholder="0,00" required [value]="preco()" (input)="preco.set($any($event.target).value)" />
+        </label>
+      }
+    </div>
+
+    @if (tipo() === 'VENDA') {
+      <label class="campo">
+        Forma de pagamento
+        <select name="forma">
+          @for (f of formas; track f) {
+            <option [value]="f">{{ f }}</option>
+          }
+        </select>
+      </label>
+      <p class="total">Total da venda: <strong>{{ valorOuTraco(total()) }}</strong></p>
+    }
+
+    <label class="campo">
+      <span>Observação <small>(opcional)</small></span>
+      <input name="observacao" maxlength="200"
+        [placeholder]="tipo() === 'ENTRADA' ? 'Ex.: compra na loja X' : tipo() === 'BAIXA' ? 'Ex.: usado na sessão, vencido' : 'Ex.: cliente da Ana'" />
+    </label>
+
+    <div class="acoes">
+      <button class="botao" [disabled]="ocupado()">{{ ocupado() ? 'Salvando...' : titulo() }}</button>
+    </div>
+  </form>
+</dialog>

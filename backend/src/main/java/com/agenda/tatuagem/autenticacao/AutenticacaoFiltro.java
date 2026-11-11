@@ -89,15 +89,16 @@ public class AutenticacaoFiltro extends OncePerRequestFilter {
 	}
 
 	/**
-	 * O token vem no cabeçalho. Só a leitura de imagens aceita o token no endereço,
-	 * porque a tag img da tela não consegue enviar cabeçalhos.
+	 * O token vem no cabeçalho. Só a leitura de imagens e arquivos aceita o token no
+	 * endereço, porque a tag img da tela não consegue enviar cabeçalhos.
 	 */
 	private static Optional<String> tokenDoPedido(HttpServletRequest pedido) {
 		String cabecalho = pedido.getHeader("Authorization");
 		if (cabecalho != null && cabecalho.startsWith(PREFIXO)) {
 			return Optional.of(cabecalho.substring(PREFIXO.length()));
 		}
-		boolean leituraDeImagem = "GET".equals(pedido.getMethod()) && pedido.getRequestURI().startsWith("/imagens/");
+		boolean leituraDeImagem = "GET".equals(pedido.getMethod())
+				&& (pedido.getRequestURI().startsWith("/imagens/") || pedido.getRequestURI().startsWith("/arquivos/"));
 		String token = pedido.getParameter("token");
 		return leituraDeImagem && token != null && !token.isEmpty() ? Optional.of(token) : Optional.empty();
 	}

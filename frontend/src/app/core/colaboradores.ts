@@ -70,6 +70,9 @@ export const ENTIDADES: Record<string, string> = {
   Imagem: 'Imagem',
   Usuario: 'Colaborador',
   ContatoCliente: 'Contato com cliente',
+  ItemEstoque: 'Item de estoque',
+  Movimento: 'Movimento de estoque',
+  Arquivo: 'Arquivo',
 };
 
 @Injectable({ providedIn: 'root' })

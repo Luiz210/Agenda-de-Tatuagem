@@ -40,6 +40,8 @@ describe('App', () => {
       'Hoje',
       'Agenda',
       'Clientes',
+      'Estoque',
+      'Produtos',
       'Colaboradores',
     ]);
   });

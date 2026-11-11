@@ -35,10 +35,15 @@ import com.agenda.tatuagem.agenda.Pagamento;
 import com.agenda.tatuagem.agenda.SessaoTatuagem;
 import com.agenda.tatuagem.agenda.StatusSessao;
 import com.agenda.tatuagem.agenda.Tatuagem;
+import com.agenda.tatuagem.arquivos.Arquivo;
 import com.agenda.tatuagem.autenticacao.Perfil;
 import com.agenda.tatuagem.autenticacao.Senhas;
 import com.agenda.tatuagem.autenticacao.Usuario;
 import com.agenda.tatuagem.autenticacao.UsuarioAtual;
+import com.agenda.tatuagem.estoque.Categoria;
+import com.agenda.tatuagem.estoque.ItemEstoque;
+import com.agenda.tatuagem.estoque.Movimento;
+import com.agenda.tatuagem.estoque.TipoMovimento;
 
 import jakarta.persistence.EntityManager;
 
@@ -50,8 +55,9 @@ import jakarta.persistence.EntityManager;
  * </pre>
  *
  * Não apaga nada: acrescenta colaboradores, clientes, tatuagens, sessões,
- * pagamentos, imagens e contatos, com datas em volta do dia de hoje. Roda uma
- * vez só; se os colaboradores de exemplo já existirem, não faz nada.
+ * pagamentos, imagens, contatos, materiais, produtos e vendas, com datas em
+ * volta do dia de hoje. Roda uma vez só, por partes: a agenda, se os colaboradores de exemplo não existirem, e o
+ * estoque, se ainda não houver nenhum item.
  */
 @Component
 @Profile("demo")
@@ -71,19 +77,24 @@ class DadosDeDemonstracao implements ApplicationRunner {
 		this.transacao = transacao;
 	}
 
+	/** Cada parte só é carregada uma vez: as que já existem ficam como estão. */
 	@Override
 	public void run(ApplicationArguments args) {
-		Long existentes = transacao.execute(s -> em
-				.createQuery("select count(u) from Usuario u where u.nomeUsuario = :marca", Long.class)
-				.setParameter("marca", MARCA)
-				.getSingleResult());
-		if (existentes != null && existentes > 0) {
-			LOG.info("Dados de demonstração já carregados; nada a fazer.");
-			return;
-		}
 		try {
-			transacao.executeWithoutResult(s -> carregar());
-			LOG.info("Dados de demonstração carregados. Senha de todos os colaboradores de exemplo: {}", SENHA);
+			Long existentes = transacao.execute(s -> em
+					.createQuery("select count(u) from Usuario u where u.nomeUsuario = :marca", Long.class)
+					.setParameter("marca", MARCA)
+					.getSingleResult());
+			if (existentes == null || existentes == 0) {
+				transacao.executeWithoutResult(s -> carregar());
+				LOG.info("Agenda de demonstração carregada. Senha dos colaboradores de exemplo: {}", SENHA);
+			}
+			Long itens = transacao.execute(
+					s -> em.createQuery("select count(i) from ItemEstoque i", Long.class).getSingleResult());
+			if (itens == null || itens == 0) {
+				transacao.executeWithoutResult(s -> carregarEstoque());
+				LOG.info("Estoque e produtos de demonstração carregados.");
+			}
 		} finally {
 			UsuarioAtual.limpar();
 		}
@@ -200,6 +211,109 @@ class DadosDeDemonstracao implements ApplicationRunner {
 		bruno.setObservacoes("Prefere horários de manhã.");
 		em.flush();
 		agir(admin);
+	}
+
+	// ---------- Estoque e produtos ----------
+
+	private void carregarEstoque() {
+		Usuario admin = administrador();
+		Usuario rafa = porUsuario(MARCA, admin);
+		Usuario bia = porUsuario("demo.bia", admin);
+		Usuario carol = porUsuario("demo.carol", admin);
+		agir(admin);
+
+		// Materiais: um abaixo do limiar, um perto, os outros tranquilos.
+		ItemEstoque agulhaRl = item(Categoria.INSUMO, "Agulha RL 07 (cartucho)", "caixa", 6, null,
+				"Fornecedor: Tattoo Supply", new Color(40, 40, 40), "RL 07");
+		movimento(agulhaRl, TipoMovimento.ENTRADA, 10, null, null, rafa, 25, "Compra do mês");
+		movimento(agulhaRl, TipoMovimento.BAIXA, 6, null, null, rafa, 12, "Usadas nas sessões");
+		movimento(agulhaRl, TipoMovimento.BAIXA, 3, null, null, bia, 4, null);
+		ItemEstoque tintaPreta = item(Categoria.INSUMO, "Tinta preta 240 ml", "frasco", 3, null, null,
+				new Color(10, 10, 10), "TINTA");
+		movimento(tintaPreta, TipoMovimento.ENTRADA, 6, null, null, admin, 20, null);
+		movimento(tintaPreta, TipoMovimento.BAIXA, 1, null, null, rafa, 3, null);
+		ItemEstoque luvas = item(Categoria.INSUMO, "Luvas nitrílicas M", "caixa", 4, null, "Sem látex",
+				new Color(40, 90, 170), "LUVAS");
+		movimento(luvas, TipoMovimento.ENTRADA, 8, null, null, carol, 30, null);
+		movimento(luvas, TipoMovimento.BAIXA, 3, null, null, bia, 6, null);
+		ItemEstoque filme = item(Categoria.INSUMO, "Filme PVC", "rolo", 2, null, null,
+				new Color(120, 170, 190), "FILME");
+		movimento(filme, TipoMovimento.ENTRADA, 10, null, null, carol, 15, null);
+		ItemEstoque papel = item(Categoria.INSUMO, "Papel hectográfico", "pacote", 1, null, null,
+				new Color(150, 60, 160), "DECALQUE");
+		movimento(papel, TipoMovimento.ENTRADA, 2, null, null, admin, 40, null);
+		movimento(papel, TipoMovimento.BAIXA, 2, null, null, rafa, 2, "Acabou");
+
+		// Produtos: vendas em dias diferentes, para o ranking e o faturamento.
+		ItemEstoque pomada = item(Categoria.PRODUTO, "Pomada cicatrizante 30 g", "un.", 5, "39.90", null,
+				new Color(30, 140, 90), "POMADA");
+		movimento(pomada, TipoMovimento.ENTRADA, 20, null, null, carol, 35, "Lote de 20");
+		movimento(pomada, TipoMovimento.VENDA, 2, "39.90", "Pix", rafa, 20, null);
+		movimento(pomada, TipoMovimento.VENDA, 3, "39.90", "Dinheiro", bia, 9, null);
+		movimento(pomada, TipoMovimento.VENDA, 1, "35.00", "Pix", admin, 2, "Desconto para cliente antigo");
+		ItemEstoque sabonete = item(Categoria.PRODUTO, "Sabonete neutro", "un.", 3, "18.00", null,
+				new Color(200, 160, 60), "SABONETE");
+		movimento(sabonete, TipoMovimento.ENTRADA, 6, null, null, carol, 30, null);
+		movimento(sabonete, TipoMovimento.VENDA, 3, "18.00", "Cartão de débito", rafa, 7, null);
+		ItemEstoque protetor = item(Categoria.PRODUTO, "Protetor solar para tatuagem", "un.", null, "59.00", null,
+				new Color(230, 120, 40), "FPS 50");
+		movimento(protetor, TipoMovimento.ENTRADA, 8, null, null, admin, 25, null);
+		movimento(protetor, TipoMovimento.VENDA, 1, "59.00", "Cartão de crédito", admin, 5, null);
+		ItemEstoque camiseta = item(Categoria.PRODUTO, "Camiseta do estúdio", "un.", 2, "80.00", "Tamanhos P a GG",
+				new Color(20, 20, 20), "CAMISETA");
+		movimento(camiseta, TipoMovimento.ENTRADA, 10, null, null, admin, 50, null);
+		movimento(camiseta, TipoMovimento.VENDA, 2, "80.00", "Pix", bia, 15, null);
+		em.flush();
+	}
+
+	private Usuario porUsuario(String nomeUsuario, Usuario padrao) {
+		return em.createQuery("select u from Usuario u where u.nomeUsuario = :n", Usuario.class)
+				.setParameter("n", nomeUsuario)
+				.getResultStream()
+				.findFirst()
+				.orElse(padrao);
+	}
+
+	private ItemEstoque item(Categoria categoria, String nome, String unidade, Integer limiar, String preco,
+			String observacao, Color cor, String texto) {
+		Arquivo imagem = new Arquivo();
+		imagem.setNome(nome + ".png");
+		imagem.setTipo("image/png");
+		imagem.setConteudo(desenhar(cor, texto));
+		imagem.setCriadoEm(LocalDateTime.now());
+		em.persist(imagem);
+
+		ItemEstoque i = new ItemEstoque();
+		i.setCategoria(categoria);
+		i.setNome(nome);
+		i.setUnidade(unidade);
+		i.setLimiar(limiar);
+		i.setPrecoVenda(preco != null ? new BigDecimal(preco) : null);
+		i.setObservacao(observacao);
+		i.setImagem(imagem);
+		i.setCriadoEm(LocalDateTime.now().minusDays(40));
+		em.persist(i);
+		return i;
+	}
+
+	/** Lança o movimento com a data de alguns dias atrás e atualiza a quantidade do item. */
+	private void movimento(ItemEstoque i, TipoMovimento tipo, int quantidade, String preco, String forma,
+			Usuario quem, int diasAtras, String observacao) {
+		Movimento m = new Movimento();
+		m.setItem(i);
+		m.setTipo(tipo);
+		m.setQuantidade(quantidade);
+		if (preco != null) {
+			m.setValorUnitario(new BigDecimal(preco));
+			m.setValorTotal(new BigDecimal(preco).multiply(BigDecimal.valueOf(quantidade)));
+		}
+		m.setForma(forma);
+		m.setUsuario(quem);
+		m.setData(hoje.minusDays(diasAtras).atTime(14, 0));
+		m.setObservacao(observacao);
+		em.persist(m);
+		i.setQuantidade(tipo == TipoMovimento.ENTRADA ? i.getQuantidade() + quantidade
+				: i.getQuantidade() - quantidade);
 	}
 
 	// ---------- Apoio ----------

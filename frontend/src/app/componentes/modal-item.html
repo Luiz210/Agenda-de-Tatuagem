@@ -1,0 +1,132 @@
+<dialog #dialogo class="modal" (close)="aoFechar()" (click)="fecharPeloFundo($event)">
+  <form class="modal-corpo" (submit)="enviar($event)">
+    <header class="modal-topo">
+      <div>
+        <h2>{{ atual() ? atual()!.nome : (produto() ? 'Novo produto' : 'Novo material') }}</h2>
+        @if (atual(); as i) {
+          <p>{{ i.quantidade }} {{ i.unidade || 'un.' }} em estoque</p>
+        }
+      </div>
+      <button type="button" class="botao secundario fechar" aria-label="Fechar" (click)="dialogo.close()">✕</button>
+    </header>
+
+    @if (erro()) {
+      <p class="aviso-erro" role="alert">{{ erro() }}</p>
+    }
+
+    <div class="topo-item">
+      <label class="imagem" [class.vazia]="!atual()?.imagemId && !novaImagem()">
+        <input type="file" accept="image/*" (change)="escolherImagem($event)" />
+        @if (atual()?.imagemId; as id) {
+          <img [src]="estoque.urlDoArquivo(id)" alt="" />
+        } @else if (novaImagem(); as n) {
+          <img [src]="n.url" alt="" />
+        } @else {
+          <span>+ Imagem{{ produto() ? '' : ' (obrigatória)' }}</span>
+        }
+        @if (atual()?.imagemId || novaImagem()) {
+          <span class="trocar">Trocar</span>
+        }
+      </label>
+
+      <div class="campos">
+        <label class="campo">
+          Nome
+          <input name="nome" required maxlength="120" autocomplete="off" [value]="atual()?.nome ?? ''"
+            [placeholder]="produto() ? 'Ex.: Pomada cicatrizante 30g' : 'Ex.: Agulha RL 07'" />
+        </label>
+        <div class="linha-campos">
+          <label class="campo">
+            <span>Unidade <small>(opcional)</small></span>
+            <input name="unidade" maxlength="20" list="unidades" autocomplete="off" placeholder="un." [value]="atual()?.unidade ?? ''" />
+            <datalist id="unidades">
+              <option value="un."></option>
+              <option value="caixa"></option>
+              <option value="frasco"></option>
+              <option value="pacote"></option>
+              <option value="rolo"></option>
+              <option value="par"></option>
+            </datalist>
+          </label>
+          @if (!atual()) {
+            <label class="campo">
+              Quantidade atual
+              <input name="quantidade" type="number" min="0" value="0" />
+            </label>
+          }
+        </div>
+        <div class="linha-campos">
+          <label class="campo">
+            <span>Limiar de compra @if (produto()) {<small>(opcional)</small>}</span>
+            <input name="limiar" type="number" min="0" [required]="!produto()" placeholder="Ex.: 5" [value]="atual()?.limiar ?? ''" />
+          </label>
+          @if (produto()) {
+            <label class="campo">
+              Preço de venda (R$)
+              <input name="precoVenda" inputmode="decimal" placeholder="0,00" [value]="atual()?.precoVenda ?? ''" />
+            </label>
+          }
+        </div>
+      </div>
+    </div>
+    <p class="vazio-texto">O limiar é a quantidade em que é hora de comprar mais: com ela ou menos, o item aparece em "Para comprar".</p>
+
+    <label class="campo">
+      <span>Observação <small>(opcional)</small></span>
+      <input name="observacao" maxlength="500" [value]="atual()?.observacao ?? ''" placeholder="Ex.: fornecedor, marca" />
+    </label>
+
+    <div class="acoes">
+      <button class="botao" [disabled]="ocupado()">{{ ocupado() ? 'Salvando...' : 'Salvar' }}</button>
+      @if (atual(); as i) {
+        @if (confirmarExclusao()) {
+          <span>Excluir {{ i.nome }}?</span>
+          <button type="button" class="botao" [disabled]="ocupado()" (click)="excluir()">Sim, excluir</button>
+          <button type="button" class="link-acao" (click)="confirmarExclusao.set(false)">Não</button>
+        } @else {
+          <button type="button" class="link-acao" (click)="confirmarExclusao.set(true)">Excluir {{ textos().singular }}</button>
+        }
+      }
+    </div>
+
+    @if (atual(); as i) {
+      @if (produto() && (i.vendidos || i.faturamento)) {
+        <p class="resumo-vendas">
+          {{ i.vendidos }} {{ i.vendidos === 1 ? 'unidade vendida' : 'unidades vendidas' }}
+          @if (i.faturamento != null) {
+            · {{ valorOuTraco(i.faturamento) }} em vendas
+          }
+        </p>
+      }
+      <section>
+        <h3>Movimentos</h3>
+        <ul class="movimentos">
+          @for (m of movimentos(); track m.id) {
+            <li [class]="m.tipo.toLowerCase()">
+              <span class="tipo">{{ rotulos[m.tipo] }}</span>
+              <strong>{{ m.tipo === 'ENTRADA' ? '+' : '−' }}{{ m.quantidade }}</strong>
+              <span class="detalhe">
+                {{ quando(m) }}
+                @if (m.usuarioNome) {
+                  · {{ m.usuarioNome }}
+                }
+                @if (m.valorTotal != null) {
+                  · {{ valorOuTraco(m.valorTotal) }}
+                }
+                @if (m.forma) {
+                  · {{ m.forma }}
+                }
+                @if (m.observacao) {
+                  <em>{{ m.observacao }}</em>
+                }
+              </span>
+              <button type="button" class="link-acao" [disabled]="ocupado()" (click)="estornar(m)">Desfazer</button>
+            </li>
+          } @empty {
+            <li class="vazio-texto">Nenhum movimento ainda.</li>
+          }
+        </ul>
+      </section>
+    }
+  </form>
+</dialog>

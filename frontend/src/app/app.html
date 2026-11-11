@@ -75,6 +75,8 @@
     <a routerLink="/" routerLinkActive="ativo" [routerLinkActiveOptions]="{ exact: true }">Hoje</a>
     <a routerLink="/agenda" routerLinkActive="ativo">Agenda</a>
     <a routerLink="/clientes" routerLinkActive="ativo">Clientes</a>
+    <a routerLink="/estoque" routerLinkActive="ativo">Estoque</a>
+    <a routerLink="/produtos" routerLinkActive="ativo">Produtos</a>
     <a routerLink="/colaboradores" routerLinkActive="ativo">Colaboradores</a>
     @if (autenticacao.admin() || autenticacao.estudio()) {
       <a routerLink="/historico" routerLinkActive="ativo">Histórico</a>

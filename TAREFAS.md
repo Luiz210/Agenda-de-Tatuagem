@@ -2,6 +2,8 @@
 
 Levantadas na reunião com o estúdio (novembro de 2026). Cada fase vira uma versão publicada.
 
+Combinado: toda tabela nova entra nos dados de demonstração (`DadosDeDemonstracao.java`, perfil `demo`), com exemplos de todas as situações que as telas mostram.
+
 ## Fase 1: base do estúdio (publicada na 1.0.2)
 
 - [x] Colaboradores: listar, cadastrar, editar, excluir (nome, função, telefone, aluguel, dia de pagamento, perfil).
@@ -13,7 +15,7 @@ Levantadas na reunião com o estúdio (novembro de 2026). Cada fase vira uma ver
 - [x] Sinal: valor e situação (pago / não pago), aviso de "sinal pendente" na agenda.
 - [x] Durações longas na agenda (até 12 horas).
 
-## Fase 2: clientes (reengajamento) (feita, falta testar)
+## Fase 2: clientes (reengajamento) (feita)
 
 - [x] Destaque para clientes com a última tatuagem há 6 meses ou mais (quem tem horário marcado não entra).
 - [x] Marcar como "Contatado": tira o destaque, que volta 6 meses depois do contato.
@@ -21,10 +23,12 @@ Levantadas na reunião com o estúdio (novembro de 2026). Cada fase vira uma ver
 - [x] Filtro "Para contatar" em Clientes e bloco "Clientes para chamar de volta" na tela Hoje.
 - [x] WhatsApp com mensagem de reengajamento pronta.
 
-## Fase 3: estoque e produtos
+## Fase 3: estoque e produtos (feita, falta testar)
 
-- [ ] Estoque (insumos): listar com imagem, cadastrar, editar, dar baixa, excluir. Nome, imagem, quantidade, limiar de compra.
-- [ ] Produtos (venda): idem, com preço de venda, registro de cada venda e limiar opcional.
+- [x] Estoque (materiais): listar com imagem, cadastrar, editar, repor, dar baixa, excluir. Nome, imagem, unidade, limiar de compra.
+- [x] Produtos: idem, com preço de venda, registro de cada venda (quantidade, preço, forma) e limiar opcional.
+- [x] Aba "Para comprar" com os itens no limiar (Comprar) ou perto dele (Acabando).
+- [x] Histórico de movimentos por item, com "Desfazer"; faturamento por produto só para administradores.
 
 ## Fase 4: financeiro (só administradores)
 
