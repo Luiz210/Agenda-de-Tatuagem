@@ -15,22 +15,26 @@
     <span>Atendimentos hoje</span>
     <strong>{{ ativasHoje().length }}</strong>
   </div>
-  <div>
-    <span>A receber hoje</span>
-    <strong>{{ dinheiro(aReceberHoje()) }}</strong>
-  </div>
+  @if (autenticacao.conta()) {
+    <div>
+      <span>Seu a receber hoje</span>
+      <strong>{{ dinheiro(aReceberHoje()) }}</strong>
+    </div>
+  }
   <div>
     <span>Sessões no mês</span>
     <strong>{{ sessoesNoMes() }}</strong>
   </div>
-  <div>
-    <span>Previsto no mês</span>
-    <strong>{{ dinheiro(previstoNoMes()) }}</strong>
-  </div>
+  @if (autenticacao.conta()) {
+    <div>
+      <span>Seu previsto no mês</span>
+      <strong>{{ dinheiro(previstoNoMes()) }}</strong>
+    </div>
+  }
 </section>
 
 <section class="bloco">
-  <h2>Quem eu atendo hoje</h2>
+  <h2>Atendimentos de hoje</h2>
   @for (s of deHoje(); track s.id) {
     <app-cartao-sessao [sessao]="s" [urlImagem]="imagem(s)" (abrir)="aberta.set($event)" />
   } @empty {

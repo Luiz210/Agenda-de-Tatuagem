@@ -11,7 +11,9 @@ import {
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { RouterLink } from '@angular/router';
-import { Agenda, Sessao, SessaoAgenda, StatusSessao, Tatuagem, mensagemDeErro } from '../core/agenda';
+import { Agenda, Pagamento, Sessao, SessaoAgenda, StatusSessao, Tatuagem, mensagemDeErro } from '../core/agenda';
+import { Autenticacao } from '../core/autenticacao';
+import { Colaboradores } from '../core/colaboradores';
 import { dataCurta, dataPorExtenso, hojeIso } from '../core/datas';
 import {
   duracaoEmTexto,
@@ -46,6 +48,8 @@ export const FORMAS_DE_PAGAMENTO = ['Pix', 'Dinheiro', 'Cartão de crédito', 'C
 })
 export class ModalTatuagem implements AfterViewInit {
   protected readonly agenda = inject(Agenda);
+  private readonly autenticacao = inject(Autenticacao);
+  protected readonly pessoas = inject(Colaboradores).pessoas;
   private readonly dialogo = viewChild.required<ElementRef<HTMLDialogElement>>('dialogo');
 
   readonly tatuagemId = input.required<number>();
@@ -61,6 +65,7 @@ export class ModalTatuagem implements AfterViewInit {
   protected readonly novoPagamento = signal(false);
   protected readonly ampliada = signal<number | null>(null);
   protected readonly confirmarRemocao = signal(false);
+  protected readonly pagamentoESinal = signal(false);
 
   protected readonly locais = LOCAIS_DO_CORPO;
   protected readonly duracoes = DURACOES;
@@ -76,6 +81,12 @@ export class ModalTatuagem implements AfterViewInit {
   protected readonly falta = computed(() => {
     const t = this.tatuagem();
     return t?.valorTotal != null ? Math.max(0, Number(t.valorTotal) - Number(t.totalPago)) : null;
+  });
+  /** O responsável passa a tatuagem para outra pessoa; um administrador também pode. */
+  protected readonly podeTrocarResponsavel = computed(() => {
+    const t = this.tatuagem();
+    const eu = this.autenticacao.conta()?.id;
+    return !!t && (this.autenticacao.admin() || t.responsavelId == null || t.responsavelId === eu);
   });
   protected readonly ativas = computed(
     () => this.tatuagem()?.sessoes.filter((s) => s.status !== 'CANCELADA') ?? [],
@@ -129,6 +140,8 @@ export class ModalTatuagem implements AfterViewInit {
       numero: this.numeroDaSessao(s),
       totalSessoes: this.ativas().length,
       imagemId: null,
+      valoresVisiveis: t.valoresVisiveis,
+      sinal: null,
     };
     return linkWhatsapp(t.clienteTelefone, mensagemDeConfirmacao(linha));
   }
@@ -138,12 +151,14 @@ export class ModalTatuagem implements AfterViewInit {
     const t = this.tatuagem()!;
     const campos = new FormData(evento.target as HTMLFormElement);
     const texto = (nome: string) => String(campos.get(nome) ?? '').trim();
+    const responsavel = texto('responsavel');
     const ok = await this.fazer(() =>
       this.agenda.alterarTatuagem(t.id, {
         clienteId: t.clienteId,
+        responsavelId: responsavel ? Number(responsavel) : t.responsavelId,
         descricao: texto('descricao'),
         localCorpo: texto('localCorpo'),
-        valorTotal: numero(texto('valorTotal')),
+        valorTotal: t.valoresVisiveis ? numero(texto('valorTotal')) : t.valorTotal,
       }),
     );
     if (ok) this.editandoDados.set(false);
@@ -153,8 +168,10 @@ export class ModalTatuagem implements AfterViewInit {
     evento.preventDefault();
     const campos = new FormData(evento.target as HTMLFormElement);
     const texto = (nome: string) => String(campos.get(nome) ?? '').trim();
+    const responsavel = texto('responsavel');
     const dados = {
       tatuagemId: this.tatuagemId(),
+      responsavelId: responsavel ? Number(responsavel) : null,
       data: texto('data'),
       hora: texto('hora'),
       duracaoMinutos: numero(texto('duracao')),
@@ -182,6 +199,7 @@ export class ModalTatuagem implements AfterViewInit {
     evento.preventDefault();
     const campos = new FormData(evento.target as HTMLFormElement);
     const texto = (nome: string) => String(campos.get(nome) ?? '').trim();
+    const sinal = this.pagamentoESinal();
     const ok = await this.fazer(() =>
       this.agenda.criarPagamento({
         tatuagemId: this.tatuagemId(),
@@ -189,9 +207,20 @@ export class ModalTatuagem implements AfterViewInit {
         valor: numero(texto('valor')) ?? 0,
         forma: texto('forma'),
         observacao: texto('observacao'),
+        sinal,
+        pago: !sinal || Boolean(campos.get('pago')),
       }),
     );
-    if (ok) this.novoPagamento.set(false);
+    if (ok) {
+      this.novoPagamento.set(false);
+      this.pagamentoESinal.set(false);
+    }
+  }
+
+  protected marcarComoPago(p: Pagamento) {
+    return this.fazer(() =>
+      this.agenda.alterarPagamento(p.id, { ...p, tatuagemId: this.tatuagemId(), pago: true, data: this.hoje }),
+    );
   }
 
   protected removerPagamento(id: number) {

@@ -9,3 +9,4 @@
   .layout { grid-template-columns: minmax(0, 1fr); }
   .painel { position: static; }
 }
+.filtro select { min-width: 11rem; }

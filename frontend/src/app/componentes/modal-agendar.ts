@@ -10,6 +10,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { Agenda, Cliente, Tatuagem, mensagemDeErro } from '../core/agenda';
+import { Autenticacao } from '../core/autenticacao';
+import { Colaboradores } from '../core/colaboradores';
 import { dataPorExtenso, dinheiro, hojeIso } from '../core/datas';
 import { duracaoEmTexto, valorOuTraco } from '../core/formatos';
 import { reduzirImagem } from '../core/imagens';
@@ -34,6 +36,8 @@ const numero = (texto: string) => {
 })
 export class ModalAgendar implements AfterViewInit {
   private readonly agenda = inject(Agenda);
+  private readonly autenticacao = inject(Autenticacao);
+  protected readonly pessoas = inject(Colaboradores).pessoas;
   private readonly dialogo = viewChild.required<ElementRef<HTMLDialogElement>>('dialogo');
 
   /** Dia já escolhido no calendário. */
@@ -61,6 +65,9 @@ export class ModalAgendar implements AfterViewInit {
   protected readonly valorTotal = signal('');
   protected readonly valorSessao = signal('');
   private valorSessaoEditado = false;
+  /** Quem faz a tatuagem (ou atende a sessão, ao continuar uma). Começa com quem está usando. */
+  protected readonly responsavel = signal(String(this.autenticacao.conta()?.id ?? ''));
+  protected readonly sinal = signal('');
   protected readonly fotos = signal<{ arquivo: File; url: string }[]>([]);
   protected readonly erro = signal('');
   protected readonly ocupado = signal(false);
@@ -104,6 +111,10 @@ export class ModalAgendar implements AfterViewInit {
 
   protected trocarTatuagem(valor: string) {
     this.escolhaTatuagem.set(valor);
+    const escolhida = this.tatuagemEscolhida();
+    this.responsavel.set(
+      String(escolhida?.responsavelId ?? this.autenticacao.conta()?.id ?? ''),
+    );
     if (!this.valorSessaoEditado) {
       const restante = this.restante();
       this.valorSessao.set(valor === NOVA ? this.valorTotal() : restante ? String(restante) : '');
@@ -163,8 +174,10 @@ export class ModalAgendar implements AfterViewInit {
       }
       if (!clienteId) throw new Error('cliente');
 
+      const responsavelId = this.responsavel() ? Number(this.responsavel()) : null;
       const sessao = this.agendarSessao()
         ? {
+            responsavelId,
             data: this.dia(),
             hora: texto('hora'),
             duracaoMinutos: numero(texto('duracao')),
@@ -180,6 +193,9 @@ export class ModalAgendar implements AfterViewInit {
           localCorpo: texto('localCorpo'),
           valorTotal: numero(this.valorTotal()),
           primeiraSessao: sessao,
+          responsavelId,
+          sinal: numero(this.sinal()),
+          sinalPago: Boolean(campos.get('sinalPago')),
         });
         tatuagemId = criada.id;
         for (const foto of this.fotos()) {

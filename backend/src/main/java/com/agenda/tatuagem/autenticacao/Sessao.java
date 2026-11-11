@@ -9,7 +9,10 @@ import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-/** Só o hash do token fica no banco; ele vale até a pessoa clicar em Sair. */
+/**
+ * Só o hash do token fica no banco. O login de casa vale até a pessoa clicar em
+ * Sair; o do computador do estúdio (pelo PIN) expira em poucos minutos.
+ */
 @Entity
 @Table(name = "SESSAO")
 @Data
@@ -25,4 +28,8 @@ public class Sessao {
 
 	@Column(name = "CRIADA_EM", nullable = false)
 	private LocalDateTime criadaEm;
+
+	/** Vazio no login normal. */
+	@Column(name = "EXPIRA_EM")
+	private LocalDateTime expiraEm;
 }

@@ -25,9 +25,19 @@
         @if (sessao().totalSessoes > 1) {
           <span>Sessão {{ sessao().numero }} de {{ sessao().totalSessoes }}</span>
         }
+        @if (sessao().responsavelNome) {
+          <span>{{ sessao().responsavelNome }}</span>
+        }
+        @if (sessao().sinal; as sinal) {
+          @if (!sinal.pago && sessao().status === 'AGENDADA') {
+            <span class="etiqueta alerta">Sinal pendente</span>
+          }
+        }
       </span>
     </span>
-    <span class="valor">{{ valorOuTraco(sessao().valor) }}</span>
+    @if (sessao().valoresVisiveis) {
+      <span class="valor">{{ valorOuTraco(sessao().valor) }}</span>
+    }
   </button>
   @if (whatsapp(); as link) {
     <a class="botao-whats" [href]="link" target="_blank" rel="noopener">

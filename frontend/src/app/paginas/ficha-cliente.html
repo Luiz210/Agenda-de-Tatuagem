@@ -34,8 +34,10 @@
 
   <section class="numeros" aria-label="Resumo do cliente">
     <div><span>Tatuagens</span><strong>{{ f.tatuagens.length }}</strong></div>
-    <div><span>Já pagou</span><strong>{{ valorOuTraco(f.cliente.totalPago) }}</strong></div>
-    <div><span>Total contratado</span><strong>{{ valorOuTraco(totalContratado()) }}</strong></div>
+    @if (autenticacao.conta()) {
+      <div><span>Pago a você</span><strong>{{ valorOuTraco(f.cliente.totalPago) }}</strong></div>
+      <div><span>Contratado com você</span><strong>{{ valorOuTraco(totalContratado()) }}</strong></div>
+    }
     <div><span>Última sessão</span><strong>{{ f.cliente.ultimaSessao ? dataCurta(f.cliente.ultimaSessao) : '—' }}</strong></div>
   </section>
 
@@ -58,12 +60,16 @@
             @if (proximaSessao(t); as p) {
               <small class="proxima">Próxima: {{ dataCurta(p.data) }} às {{ p.hora.slice(0, 5) }}</small>
             }
-            <span class="pago">
-              Pago {{ valorOuTraco(t.totalPago) }}
-              @if (t.valorTotal != null) {
-                de {{ valorOuTraco(t.valorTotal) }}
-              }
-            </span>
+            @if (t.valoresVisiveis) {
+              <span class="pago">
+                Pago {{ valorOuTraco(t.totalPago) }}
+                @if (t.valorTotal != null) {
+                  de {{ valorOuTraco(t.valorTotal) }}
+                }
+              </span>
+            } @else if (t.responsavelNome) {
+              <small>Tatuador: {{ t.responsavelNome }}</small>
+            }
           </span>
         </button>
       </li>

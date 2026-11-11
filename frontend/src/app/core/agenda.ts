@@ -21,6 +21,8 @@ export interface Cliente extends ClienteDados {
 
 export interface Sessao {
   id: number;
+  responsavelId: number | null;
+  responsavelNome: string | null;
   data: string;
   hora: string;
   duracaoMinutos: number | null;
@@ -31,6 +33,7 @@ export interface Sessao {
 
 export interface SessaoDados {
   tatuagemId?: number;
+  responsavelId?: number | null;
   data: string;
   hora: string;
   duracaoMinutos?: number | null;
@@ -39,7 +42,13 @@ export interface SessaoDados {
   observacao?: string | null;
 }
 
-/** Uma linha da agenda, já com a tatuagem e o cliente. */
+/** Situação do sinal da tatuagem. O valor só vem para o responsável. */
+export interface SinalResumo {
+  valor: number | null;
+  pago: boolean;
+}
+
+/** Uma linha da agenda, já com a tatuagem e o cliente. Sem permissão, os valores vêm vazios. */
 export interface SessaoAgenda extends Sessao {
   tatuagemId: number;
   descricao: string;
@@ -51,6 +60,8 @@ export interface SessaoAgenda extends Sessao {
   numero: number;
   totalSessoes: number;
   imagemId: number | null;
+  valoresVisiveis: boolean;
+  sinal: SinalResumo | null;
 }
 
 export interface Pagamento {
@@ -59,6 +70,18 @@ export interface Pagamento {
   valor: number;
   forma: string | null;
   observacao: string | null;
+  sinal: boolean;
+  pago: boolean;
+}
+
+export interface PagamentoDados {
+  tatuagemId: number;
+  data: string;
+  valor: number;
+  forma?: string | null;
+  observacao?: string | null;
+  sinal?: boolean;
+  pago?: boolean;
 }
 
 export interface Imagem {
@@ -69,10 +92,14 @@ export interface Imagem {
 
 export interface TatuagemDados {
   clienteId: number;
+  responsavelId?: number | null;
   descricao: string;
   localCorpo?: string | null;
   valorTotal?: number | null;
   primeiraSessao?: SessaoDados | null;
+  /** Só na criação. */
+  sinal?: number | null;
+  sinalPago?: boolean;
 }
 
 export interface Tatuagem {
@@ -80,10 +107,14 @@ export interface Tatuagem {
   clienteId: number;
   clienteNome: string;
   clienteTelefone: string | null;
+  responsavelId: number | null;
+  responsavelNome: string | null;
+  /** Os valores e pagamentos são só do tatuador responsável. */
+  valoresVisiveis: boolean;
   descricao: string;
   localCorpo: string | null;
   valorTotal: number | null;
-  totalPago: number;
+  totalPago: number | null;
   sessoes: Sessao[];
   pagamentos: Pagamento[];
   imagens: Imagem[];
@@ -131,11 +162,13 @@ export class Agenda {
     return this.mudar(this.http.delete<void>(`/api/tatuagens/${id}`));
   }
 
-  sessoes(inicio: string, fim: string) {
-    return this.get<SessaoAgenda[]>(`sessoes?inicio=${inicio}&fim=${fim}`);
+  sessoes(inicio: string, fim: string, responsavel?: number | null) {
+    const filtro = responsavel ? `&responsavel=${responsavel}` : '';
+    return this.get<SessaoAgenda[]>(`sessoes?inicio=${inicio}&fim=${fim}${filtro}`);
   }
-  proximas(aPartirDe: string, limite = 5) {
-    return this.get<SessaoAgenda[]>(`sessoes/proximas?a-partir-de=${aPartirDe}&limite=${limite}`);
+  proximas(aPartirDe: string, limite = 5, responsavel?: number | null) {
+    const filtro = responsavel ? `&responsavel=${responsavel}` : '';
+    return this.get<SessaoAgenda[]>(`sessoes/proximas?a-partir-de=${aPartirDe}&limite=${limite}${filtro}`);
   }
   criarSessao(dados: SessaoDados) {
     return this.mudar(this.http.post<Sessao>('/api/sessoes', dados));
@@ -147,8 +180,11 @@ export class Agenda {
     return this.mudar(this.http.delete<void>(`/api/sessoes/${id}`));
   }
 
-  criarPagamento(dados: { tatuagemId: number; data: string; valor: number; forma?: string; observacao?: string }) {
+  criarPagamento(dados: PagamentoDados) {
     return this.mudar(this.http.post<Pagamento>('/api/pagamentos', dados));
+  }
+  alterarPagamento(id: number, dados: PagamentoDados) {
+    return this.mudar(this.http.put<Pagamento>(`/api/pagamentos/${id}`, dados));
   }
   removerPagamento(id: number) {
     return this.mudar(this.http.delete<void>(`/api/pagamentos/${id}`));
@@ -161,6 +197,11 @@ export class Agenda {
   }
   removerImagem(id: number) {
     return this.mudar(this.http.delete<void>(`/api/imagens/${id}`));
+  }
+
+  /** Todas as alterações passam por aqui, para as telas recarregarem. */
+  avisarMudanca() {
+    this.versao.update((v) => v + 1);
   }
 
   /** A tag img não envia o cabeçalho de login, então o token vai no endereço. */
@@ -185,5 +226,6 @@ export function mensagemDeErro(erro: unknown): string {
     if (erro.status === 0) return 'Não foi possível falar com o servidor da agenda. Confira se ele está aberto.';
     return `O servidor respondeu com erro ${erro.status}. Tente de novo.`;
   }
+  if (erro instanceof Error && erro.message) return erro.message;
   return 'Ocorreu um erro inesperado. Tente de novo.';
 }

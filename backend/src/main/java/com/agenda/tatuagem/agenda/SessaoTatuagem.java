@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import com.agenda.tatuagem.autenticacao.Usuario;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -32,6 +34,11 @@ public class SessaoTatuagem {
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "TATUAGEM_ID", nullable = false)
 	private Tatuagem tatuagem;
+
+	/** Quem atende nesta sessão. Normalmente o mesmo da tatuagem. */
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "RESPONSAVEL_ID")
+	private Usuario responsavel;
 
 	@Column(nullable = false)
 	private LocalDate data;

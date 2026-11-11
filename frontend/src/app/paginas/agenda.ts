@@ -1,5 +1,7 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { Agenda, SessaoAgenda, mensagemDeErro } from '../core/agenda';
+import { Autenticacao } from '../core/autenticacao';
+import { Colaboradores } from '../core/colaboradores';
 import { dataPorExtenso, dinheiro, hojeIso, inicioEFimDoMes, mudarMes, nomeDoMes } from '../core/datas';
 import { CalendarioAgenda } from '../componentes/calendario-agenda';
 import { CartaoSessao } from '../componentes/cartao-sessao';
@@ -15,6 +17,10 @@ import { ModalTatuagem } from '../componentes/modal-tatuagem';
 })
 export class PaginaAgenda {
   protected readonly agenda = inject(Agenda);
+  protected readonly autenticacao = inject(Autenticacao);
+  protected readonly pessoas = inject(Colaboradores).pessoas;
+  /** Vazio mostra a agenda de todo o estúdio. */
+  protected readonly tatuador = signal('');
   protected readonly hoje = hojeIso();
   protected readonly ano = signal(new Date().getFullYear());
   protected readonly mes = signal(new Date().getMonth());
@@ -27,10 +33,11 @@ export class PaginaAgenda {
   protected readonly titulo = computed(() => nomeDoMes(this.ano(), this.mes()));
   protected readonly diaExtenso = computed(() => dataPorExtenso(this.dia()));
   protected readonly doDia = computed(() => this.sessoes().filter((s) => s.data === this.dia()));
+  protected readonly temValoresNoDia = computed(() => this.doDia().some((s) => s.valoresVisiveis));
   protected readonly totalDoDia = computed(() =>
     dinheiro(
       this.doDia()
-        .filter((s) => s.status !== 'CANCELADA')
+        .filter((s) => s.status !== 'CANCELADA' && s.valoresVisiveis)
         .reduce((t, s) => t + Number(s.valor ?? 0), 0),
     ),
   );
@@ -38,14 +45,15 @@ export class PaginaAgenda {
   constructor() {
     effect(() => {
       this.agenda.versao();
-      void this.carregar(this.ano(), this.mes());
+      this.autenticacao.conta();
+      void this.carregar(this.ano(), this.mes(), this.tatuador());
     });
   }
 
-  private async carregar(ano: number, mes: number) {
+  private async carregar(ano: number, mes: number, tatuador: string) {
     const { inicio, fim } = inicioEFimDoMes(ano, mes);
     try {
-      this.sessoes.set(await this.agenda.sessoes(inicio, fim));
+      this.sessoes.set(await this.agenda.sessoes(inicio, fim, tatuador ? Number(tatuador) : null));
       this.erro.set('');
     } catch (e) {
       this.erro.set(mensagemDeErro(e));

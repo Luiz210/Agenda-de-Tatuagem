@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
+import { Autenticacao } from '../core/autenticacao';
 import { Agenda, Ficha, Tatuagem, mensagemDeErro } from '../core/agenda';
 import { dataCurta } from '../core/datas';
 import { linkWhatsapp, telefoneFormatado, valorOuTraco } from '../core/formatos';
@@ -17,6 +18,7 @@ import { ModalTatuagem } from '../componentes/modal-tatuagem';
 })
 export class FichaCliente {
   protected readonly agenda = inject(Agenda);
+  protected readonly autenticacao = inject(Autenticacao);
   private readonly router = inject(Router);
 
   /** Vem da rota clientes/:id. */
@@ -34,12 +36,16 @@ export class FichaCliente {
 
   protected readonly whatsapp = computed(() => linkWhatsapp(this.ficha()?.cliente.telefone));
   protected readonly totalContratado = computed(
-    () => this.ficha()?.tatuagens.reduce((t, x) => t + Number(x.valorTotal ?? 0), 0) ?? 0,
+    () =>
+      this.ficha()
+        ?.tatuagens.filter((x) => x.valoresVisiveis)
+        .reduce((t, x) => t + Number(x.valorTotal ?? 0), 0) ?? 0,
   );
 
   constructor() {
     effect(() => {
       this.agenda.versao();
+      this.autenticacao.conta();
       void this.carregar(Number(this.id()));
     });
   }

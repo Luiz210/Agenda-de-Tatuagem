@@ -1,0 +1,8 @@
+:host { --largura-modal: 24rem; }
+.pin {
+  font: 700 2rem/1 var(--titulo);
+  letter-spacing: 0.6em;
+  padding: 0.6rem 0.8rem;
+  text-align: center;
+}
+.nota { color: var(--suave); font-size: 0.85rem; margin: 0; }

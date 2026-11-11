@@ -1,4 +1,4 @@
-@if (autenticacao.conta()) {
+@if (mostrarTelas()) {
 <div class="shell">
   <a class="logo" routerLink="/">
     <app-logo />
@@ -7,6 +7,17 @@
 
   <header class="topo">
     <span>{{ hoje }}</span>
+    <div class="direita">
+    @if (autenticacao.estudio()) {
+      @if (autenticacao.conta(); as conta) {
+        <div class="operador" role="status">
+          <span><strong>{{ conta.nome }}</strong> <small>· {{ tempoRestante() }}</small></span>
+          <button type="button" class="link-acao" (click)="sair()">Encerrar</button>
+        </div>
+      } @else {
+        <button type="button" class="botao secundario" (click)="identificar()">Identificar-se</button>
+      }
+    }
     <div class="menu">
       <button
         type="button"
@@ -29,13 +40,18 @@
           @if (autenticacao.conta(); as conta) {
             <p class="conta">
               <strong>{{ conta.nome }}</strong>
-              <span>{{ conta.email }}</span>
+              <span>{{ conta.perfil === 'ADMIN' ? 'Administrador' : conta.funcao || 'Colaborador' }}</span>
             </p>
+            <button type="button" (click)="trocarCodigo()">Meu código</button>
+          } @else if (autenticacao.estudio()) {
+            <p class="conta"><span>Computador do estúdio</span></p>
           }
           @if (noAplicativo) {
             <button type="button" (click)="abrirConexao()">Conexão</button>
           }
-          <button type="button" (click)="sair()">Sair</button>
+          @if (autenticacao.conta()) {
+            <button type="button" (click)="sair()">{{ autenticacao.estudio() ? 'Encerrar identificação' : 'Sair' }}</button>
+          }
           @if (atualizacao(); as a) {
             <div class="versao">
               <span>Versão {{ a.versaoAtual }}</span>
@@ -52,12 +68,17 @@
         </div>
       }
     </div>
+    </div>
   </header>
 
   <nav class="lateral" aria-label="Telas">
     <a routerLink="/" routerLinkActive="ativo" [routerLinkActiveOptions]="{ exact: true }">Hoje</a>
     <a routerLink="/agenda" routerLinkActive="ativo">Agenda</a>
     <a routerLink="/clientes" routerLinkActive="ativo">Clientes</a>
+    <a routerLink="/colaboradores" routerLinkActive="ativo">Colaboradores</a>
+    @if (autenticacao.admin() || autenticacao.estudio()) {
+      <a routerLink="/historico" routerLinkActive="ativo">Histórico</a>
+    }
   </nav>
 
   <main class="conteudo">
@@ -75,4 +96,11 @@
 </div>
 } @else {
   <router-outlet />
+}
+
+@if (autenticacao.pedindoCodigo()) {
+  <app-modal-codigo />
+}
+@if (trocandoCodigo()) {
+  <app-modal-meu-codigo (fechar)="trocandoCodigo.set(false)" />
 }

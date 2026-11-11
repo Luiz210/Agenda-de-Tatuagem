@@ -1,6 +1,15 @@
 <header class="cabecalho">
   <h1 class="titulo-pagina">{{ titulo() }}</h1>
   <div class="navegacao">
+    <label class="campo filtro">
+      <span class="oculto">Tatuador</span>
+      <select [value]="tatuador()" (change)="tatuador.set($any($event.target).value)">
+        <option value="">Todo o estúdio</option>
+        @for (p of pessoas(); track p.id) {
+          <option [value]="p.id">{{ p.nome }}</option>
+        }
+      </select>
+    </label>
     <button type="button" class="botao secundario" aria-label="Mês anterior" (click)="mudar(-1)">‹</button>
     <button type="button" class="botao secundario" (click)="irParaHoje()">Hoje</button>
     <button type="button" class="botao secundario" aria-label="Próximo mês" (click)="mudar(1)">›</button>
@@ -26,7 +35,12 @@
       <div>
         <h2>{{ diaExtenso() }}</h2>
         @if (doDia().length) {
-          <p class="sub-pagina">{{ doDia().length }} {{ doDia().length === 1 ? 'sessão' : 'sessões' }} · {{ totalDoDia() }}</p>
+          <p class="sub-pagina">
+            {{ doDia().length }} {{ doDia().length === 1 ? 'sessão' : 'sessões' }}
+            @if (temValoresNoDia()) {
+              · seu: {{ totalDoDia() }}
+            }
+          </p>
         }
       </div>
     </div>

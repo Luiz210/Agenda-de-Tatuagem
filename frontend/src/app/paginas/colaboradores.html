@@ -1,0 +1,48 @@
+<header class="cabecalho">
+  <div>
+    <h1 class="titulo-pagina">Colaboradores</h1>
+    <p class="sub-pagina">{{ lista().length }} {{ lista().length === 1 ? 'pessoa' : 'pessoas' }} no estúdio</p>
+  </div>
+  @if (autenticacao.admin() || autenticacao.estudio()) {
+    <button type="button" class="botao" (click)="abrir('novo')">+ Novo colaborador</button>
+  }
+</header>
+
+@if (erro()) {
+  <p class="aviso-erro" role="alert">{{ erro() }}</p>
+}
+
+<ul class="lista">
+  @for (c of lista(); track c.id) {
+    <li>
+      <button type="button" [disabled]="!autenticacao.admin() && !autenticacao.estudio()" (click)="abrir(c)">
+        <span class="inicial" aria-hidden="true">{{ c.nome.charAt(0).toUpperCase() }}</span>
+        <span class="nome">
+          <strong>{{ c.nome }}</strong>
+          <small>
+            {{ c.funcao || 'Sem função' }}
+            @if (c.telefone) {
+              · {{ telefoneFormatado(c.telefone) }}
+            }
+          </small>
+        </span>
+        <span class="dado">
+          <small>Perfil</small>
+          <span [class]="'etiqueta ' + (c.perfil === 'ADMIN' ? 'realizada' : 'neutra')">
+            {{ c.perfil === 'ADMIN' ? 'Administrador' : 'Padrão' }}
+          </span>
+        </span>
+        <span class="dado"><small>Código</small>{{ c.temPin ? 'Definido' : 'Sem código' }}</span>
+        @if (autenticacao.admin()) {
+          <span class="dado"><small>Aluguel</small>{{ rotuloAluguel(c) }}</span>
+        }
+      </button>
+    </li>
+  } @empty {
+    <li class="vazio-texto">Nenhum colaborador cadastrado.</li>
+  }
+</ul>
+
+@if (editando(); as e) {
+  <app-modal-colaborador [colaborador]="e === 'novo' ? null : e" (fechar)="editando.set(null)" />
+}

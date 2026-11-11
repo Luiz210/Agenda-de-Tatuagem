@@ -90,15 +90,16 @@ public class AgendaController {
 
 	@GetMapping("sessoes")
 	public List<SessaoAgenda> sessoes(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate inicio,
-			@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim) {
-		return agenda.sessoes(inicio, fim);
+			@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fim,
+			@RequestParam(required = false) Long responsavel) {
+		return agenda.sessoes(inicio, fim, responsavel);
 	}
 
 	@GetMapping("sessoes/proximas")
 	public List<SessaoAgenda> proximas(
 			@RequestParam("a-partir-de") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate aPartirDe,
-			@RequestParam(defaultValue = "5") int limite) {
-		return agenda.proximas(aPartirDe, limite);
+			@RequestParam(defaultValue = "5") int limite, @RequestParam(required = false) Long responsavel) {
+		return agenda.proximas(aPartirDe, limite, responsavel);
 	}
 
 	@PostMapping("sessoes")
@@ -120,6 +121,11 @@ public class AgendaController {
 	@PostMapping("pagamentos")
 	public PagamentoDetalhe criarPagamento(@RequestBody PagamentoDados dados) {
 		return agenda.criarPagamento(dados);
+	}
+
+	@PutMapping("pagamentos/{id}")
+	public PagamentoDetalhe alterarPagamento(@PathVariable Long id, @RequestBody PagamentoDados dados) {
+		return agenda.alterarPagamento(id, dados);
 	}
 
 	@DeleteMapping("pagamentos/{id}")

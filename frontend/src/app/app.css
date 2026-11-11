@@ -112,3 +112,17 @@
 .menu-lista .versao .acao { color: var(--vermelho); font-weight: 600; }
 .aviso-atualizacao { align-items: center; background: var(--papel); border-left: 4px solid var(--vermelho); border-radius: 8px; display: flex; flex-wrap: wrap; gap: 0.6rem 1rem; justify-content: space-between; margin-bottom: 1.25rem; padding: 0.75rem 1rem; }
 .aviso-atualizacao > div { align-items: center; display: flex; gap: 0.8rem; }
+.direita { align-items: center; display: flex; gap: 1rem; }
+.operador {
+  align-items: center;
+  border: 1px solid var(--vermelho);
+  border-radius: 999px;
+  color: var(--texto);
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.3rem 0.4rem 0.3rem 0.9rem;
+}
+.operador small { color: var(--suave); font-variant-numeric: tabular-nums; }
+@media (max-width: 800px) {
+  .topo .operador span { display: inline; }
+}

@@ -10,25 +10,38 @@ import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 
 /** Hash de senhas e tokens, sem depender de bibliotecas além do próprio Java. */
-final class Senhas {
+public final class Senhas {
 
 	private static final String ALGORITMO = "PBKDF2WithHmacSHA256";
 	private static final int ITERACOES = 210_000;
+	private static final int ITERACOES_PIN = 20_000;
 	private static final int BITS = 256;
 	private static final SecureRandom ALEATORIO = new SecureRandom();
 
 	private Senhas() {
 	}
 
-	static String gerarHash(String senha) {
-		byte[] sal = new byte[16];
-		ALEATORIO.nextBytes(sal);
-		byte[] hash = derivar(senha, sal, ITERACOES);
-		Base64.Encoder base64 = Base64.getEncoder();
-		return ITERACOES + ":" + base64.encodeToString(sal) + ":" + base64.encodeToString(hash);
+	public static String gerarHash(String senha) {
+		return gerarHash(senha, ITERACOES);
 	}
 
-	static boolean confere(String senha, String armazenado) {
+	/**
+	 * O PIN é conferido contra todas as pessoas a cada digitação, então usa menos
+	 * iterações. Ele só funciona no próprio computador do estúdio e tem limite de tentativas.
+	 */
+	public static String gerarHashPin(String pin) {
+		return gerarHash(pin, ITERACOES_PIN);
+	}
+
+	private static String gerarHash(String senha, int iteracoes) {
+		byte[] sal = new byte[16];
+		ALEATORIO.nextBytes(sal);
+		byte[] hash = derivar(senha, sal, iteracoes);
+		Base64.Encoder base64 = Base64.getEncoder();
+		return iteracoes + ":" + base64.encodeToString(sal) + ":" + base64.encodeToString(hash);
+	}
+
+	public static boolean confere(String senha, String armazenado) {
 		String[] partes = armazenado.split(":");
 		byte[] sal = Base64.getDecoder().decode(partes[1]);
 		byte[] esperado = Base64.getDecoder().decode(partes[2]);

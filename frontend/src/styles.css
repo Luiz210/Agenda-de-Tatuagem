@@ -141,3 +141,19 @@ dialog.modal::backdrop { background: rgb(0 0 0 / 60%); }
 .vazio-texto { color: var(--suave); margin: 0; }
 .titulo-pagina { font-size: clamp(2rem, 4vw, 3rem); }
 .sub-pagina { color: var(--suave); margin: 0.25rem 0 0; }
+
+.oculto { clip: rect(0 0 0 0); height: 1px; overflow: hidden; position: absolute; width: 1px; }
+
+/* Etiquetas de sinal e de perfil. */
+.etiqueta.alerta { background: var(--vermelho); border-color: var(--vermelho); color: #fff; }
+.etiqueta.neutra { color: var(--suave); }
+
+/* Aviso de quem pode ver ou alterar algo. */
+.aviso-info {
+  background: var(--papel);
+  border-left: 4px solid var(--noite-3);
+  border-radius: 6px;
+  color: var(--suave);
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+}

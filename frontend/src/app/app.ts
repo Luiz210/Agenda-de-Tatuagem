@@ -1,12 +1,15 @@
-import { Component, HostListener, computed, inject, signal } from '@angular/core';
+import { Component, HostListener, computed, effect, inject, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Autenticacao } from './core/autenticacao';
 import { dataPorExtenso, hojeIso } from './core/datas';
 import { Logo } from './componentes/logo';
 import { EstadoAtualizacao, agendaApp } from './core/aplicativo';
+import { Colaboradores } from './core/colaboradores';
+import { ModalCodigo } from './componentes/modal-codigo';
+import { ModalMeuCodigo } from './componentes/modal-meu-codigo';
 
 @Component({
-  imports: [Logo, RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [Logo, ModalCodigo, ModalMeuCodigo, RouterLink, RouterLinkActive, RouterOutlet],
   selector: 'app-root',
   styleUrl: './app.css',
   templateUrl: './app.html',
@@ -17,6 +20,17 @@ export class App {
   protected readonly hoje = dataPorExtenso(hojeIso());
   protected readonly menuAberto = signal(false);
   protected readonly noAplicativo = agendaApp() !== null;
+  protected readonly trocandoCodigo = signal(false);
+
+  /** As telas aparecem com login (em casa) ou sempre (no computador do estúdio, depois da primeira conta). */
+  protected readonly mostrarTelas = computed(() => {
+    const estado = this.autenticacao.estado();
+    return estado?.estudio ? estado.temContas : this.autenticacao.conta() !== null;
+  });
+  protected readonly tempoRestante = computed(() => {
+    const s = this.autenticacao.segundosRestantes();
+    return s == null ? '' : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+  });
 
   protected readonly atualizacao = signal<EstadoAtualizacao | null>(null);
   protected readonly avisoFechado = signal(false);
@@ -40,6 +54,12 @@ export class App {
   });
 
   constructor() {
+    const colaboradores = inject(Colaboradores);
+    // Depois de entrar em casa, a lista de pessoas passa a ser permitida.
+    effect(() => {
+      if (this.autenticacao.conta()) void colaboradores.carregarPessoas();
+    });
+
     const app = agendaApp();
     if (!app) return;
     void app.lerAtualizacao().then((estado) => this.atualizacao.set(estado));
@@ -72,8 +92,17 @@ export class App {
     try {
       await this.autenticacao.sair();
     } finally {
-      await this.router.navigate(['/entrar']);
+      // No estúdio as telas continuam abertas; só deixa de alterar no nome da pessoa.
+      if (!this.autenticacao.estudio()) await this.router.navigate(['/entrar']);
     }
+  }
+
+  protected identificar() {
+    void this.autenticacao.pedirCodigo();
+  }
+
+  protected trocarCodigo() {
+    this.trocandoCodigo.set(true);
   }
 
   @HostListener('document:click')

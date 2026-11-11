@@ -30,7 +30,7 @@
           </small>
         </span>
         <span class="dado"><small>Tatuagens</small>{{ c.tatuagens }}</span>
-        <span class="dado"><small>Já pagou</small>{{ valorOuTraco(c.totalPago) }}</span>
+        <span class="dado"><small>Pago a você</small>{{ autenticacao.conta() ? valorOuTraco(c.totalPago) : '—' }}</span>
         <span class="dado"><small>Última sessão</small>{{ c.ultimaSessao ? dataCurta(c.ultimaSessao) : '—' }}</span>
       </button>
     </li>

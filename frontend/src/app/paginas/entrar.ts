@@ -1,8 +1,7 @@
-import { HttpErrorResponse } from '@angular/common/http';
-import { Component, inject, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { agendaApp } from '../core/aplicativo';
 import { Autenticacao } from '../core/autenticacao';
+import { mensagemDeErro } from '../core/agenda';
 import { Logo } from '../componentes/logo';
 
 type Modo = 'entrar' | 'cadastrar';
@@ -17,9 +16,12 @@ export class Entrar {
   private readonly autenticacao = inject(Autenticacao);
   private readonly router = inject(Router);
 
-  /** Quem se cadastra por outro computador precisa do código do servidor. */
-  protected readonly pedeConvite = agendaApp()?.modo === 'cliente';
-  protected readonly modo = signal<Modo>('entrar');
+  /**
+   * No computador do estúdio esta tela só aparece na primeira abertura, para
+   * criar a conta do administrador. Nos outros, é o login normal.
+   */
+  protected readonly primeiraConta = computed(() => this.autenticacao.estudio());
+  protected readonly modo = signal<Modo>(this.autenticacao.estudio() ? 'cadastrar' : 'entrar');
   protected readonly erro = signal('');
   protected readonly ocupado = signal(false);
 
@@ -50,12 +52,12 @@ export class Entrar {
           email: valor('email'),
           senha: valor('senha'),
           convite: valor('convite'),
+          pin: valor('pin'),
         });
       }
       await this.router.navigate(['/']);
     } catch (e) {
-      const mensagem = (e as HttpErrorResponse).error?.mensagem;
-      this.erro.set(mensagem ?? 'Não foi possível falar com o aplicativo. Tente novamente.');
+      this.erro.set(mensagemDeErro(e));
     } finally {
       this.ocupado.set(false);
     }

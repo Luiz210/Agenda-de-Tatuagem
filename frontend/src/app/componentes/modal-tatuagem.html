@@ -9,6 +9,9 @@
             @if (t.localCorpo) {
               · {{ t.localCorpo }}
             }
+            @if (t.responsavelNome) {
+              · Tatuador: {{ t.responsavelNome }}
+            }
           </p>
         } @else {
           <h2>Carregando...</h2>
@@ -39,23 +42,42 @@
                 }
               </datalist>
             </label>
-            <label class="campo">
-              Valor total (R$)
-              <input name="valorTotal" inputmode="decimal" [value]="t.valorTotal ?? ''" />
-            </label>
+            @if (t.valoresVisiveis) {
+              <label class="campo">
+                Valor total (R$)
+                <input name="valorTotal" inputmode="decimal" [value]="t.valorTotal ?? ''" />
+              </label>
+            }
           </div>
+          @if (podeTrocarResponsavel()) {
+            <label class="campo">
+              Tatuador
+              <select name="responsavel">
+                @for (p of pessoas(); track p.id) {
+                  <option [value]="p.id" [selected]="p.id === t.responsavelId">{{ p.nome }}</option>
+                }
+              </select>
+            </label>
+          }
           <div class="acoes">
             <button class="botao" [disabled]="ocupado()">Salvar</button>
             <button type="button" class="link-acao" (click)="editandoDados.set(false)">Cancelar</button>
           </div>
         </form>
       } @else {
-        <div class="valores">
-          <div><span>Valor total</span><strong>{{ valorOuTraco(t.valorTotal) }}</strong></div>
-          <div><span>Já pago</span><strong>{{ valorOuTraco(t.totalPago) }}</strong></div>
-          <div><span>Falta</span><strong [class.falta]="falta()">{{ valorOuTraco(falta()) }}</strong></div>
-          <button type="button" class="link-acao" (click)="editandoDados.set(true)">Editar dados</button>
-        </div>
+        @if (t.valoresVisiveis) {
+          <div class="valores">
+            <div><span>Valor total</span><strong>{{ valorOuTraco(t.valorTotal) }}</strong></div>
+            <div><span>Já pago</span><strong>{{ valorOuTraco(t.totalPago) }}</strong></div>
+            <div><span>Falta</span><strong [class.falta]="falta()">{{ valorOuTraco(falta()) }}</strong></div>
+            <button type="button" class="link-acao" (click)="editandoDados.set(true)">Editar dados</button>
+          </div>
+        } @else {
+          <p class="aviso-info">
+            Os valores e pagamentos desta tatuagem são de {{ t.responsavelNome || 'quem faz a tatuagem' }}.
+            <button type="button" class="link-acao" (click)="editandoDados.set(true)">Editar dados</button>
+          </p>
+        }
       }
 
       <!-- Imagens -->
@@ -106,7 +128,12 @@
                       @if (s.duracaoMinutos) {
                         <span>{{ duracaoEmTexto(s.duracaoMinutos) }}</span>
                       }
-                      <span>{{ valorOuTraco(s.valor) }}</span>
+                      @if (t.valoresVisiveis) {
+                        <span>{{ valorOuTraco(s.valor) }}</span>
+                      }
+                      @if (s.responsavelNome && s.responsavelId !== t.responsavelId) {
+                        <span>Com {{ s.responsavelNome }}</span>
+                      }
                     </span>
                     @if (s.observacao) {
                       <span class="obs">{{ s.observacao }}</span>
@@ -137,7 +164,8 @@
         </ul>
       </section>
 
-      <!-- Pagamentos -->
+      <!-- Pagamentos: só para o tatuador responsável -->
+      @if (t.valoresVisiveis) {
       <section>
         <div class="titulo-secao">
           <h3>Pagamentos</h3>
@@ -151,6 +179,12 @@
               <div>
                 <strong>{{ valorOuTraco(p.valor) }}</strong>
                 <span class="meta">
+                  @if (p.sinal) {
+                    <span class="etiqueta neutra">Sinal</span>
+                  }
+                  @if (!p.pago) {
+                    <span class="etiqueta alerta">Não pago</span>
+                  }
                   <span>{{ dataCurta(p.data) }}</span>
                   @if (p.forma) {
                     <span>{{ p.forma }}</span>
@@ -160,7 +194,12 @@
                   }
                 </span>
               </div>
-              <button type="button" class="link-acao" [disabled]="ocupado()" (click)="removerPagamento(p.id)">Remover</button>
+              <div class="acoes pequenas">
+                @if (!p.pago) {
+                  <button type="button" class="link-acao" [disabled]="ocupado()" (click)="marcarComoPago(p)">Marcar como pago</button>
+                }
+                <button type="button" class="link-acao" [disabled]="ocupado()" (click)="removerPagamento(p.id)">Remover</button>
+              </div>
             </li>
           } @empty {
             @if (!novoPagamento()) {
@@ -188,8 +227,20 @@
                     <input name="data" type="date" required [value]="hoje" />
                   </label>
                 </div>
+                <div class="acoes">
+                  <label class="opcao">
+                    <input type="checkbox" [checked]="pagamentoESinal()" (change)="pagamentoESinal.set($any($event.target).checked)" />
+                    <span>É o sinal</span>
+                  </label>
+                  @if (pagamentoESinal()) {
+                    <label class="opcao">
+                      <input type="checkbox" name="pago" checked />
+                      <span>Já foi pago</span>
+                    </label>
+                  }
+                </div>
                 <label class="campo">
-                  <span>Observação <small>(ex.: sinal)</small></span>
+                  Observação
                   <input name="observacao" maxlength="200" />
                 </label>
                 <div class="acoes">
@@ -201,6 +252,7 @@
           }
         </ul>
       </section>
+      }
 
       <footer>
         @if (confirmarRemocao()) {
@@ -235,11 +287,21 @@
           }
         </select>
       </label>
-      <label class="campo">
-        Valor (R$)
-        <input name="valor" inputmode="decimal" placeholder="0,00" [value]="s?.valor ?? (s ? '' : (falta() ?? ''))" />
-      </label>
+      @if (tatuagem()?.valoresVisiveis) {
+        <label class="campo">
+          Valor (R$)
+          <input name="valor" inputmode="decimal" placeholder="0,00" [value]="s?.valor ?? (s ? '' : (falta() ?? ''))" />
+        </label>
+      }
     </div>
+    <label class="campo">
+      Quem atende
+      <select name="responsavel">
+        @for (p of pessoas(); track p.id) {
+          <option [value]="p.id" [selected]="p.id === (s?.responsavelId ?? tatuagem()?.responsavelId)">{{ p.nome }}</option>
+        }
+      </select>
+    </label>
     <label class="campo">
       Observação
       <input name="observacao" maxlength="500" [value]="s?.observacao ?? ''" />

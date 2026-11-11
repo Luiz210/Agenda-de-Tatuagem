@@ -1,13 +1,17 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { Agenda, SessaoAgenda, mensagemDeErro } from '../core/agenda';
+import { Autenticacao } from '../core/autenticacao';
 import { dataPorExtenso, dinheiro, hojeIso, inicioEFimDoMes, somarDias } from '../core/datas';
 import { CartaoSessao } from '../componentes/cartao-sessao';
 import { ModalAgendar } from '../componentes/modal-agendar';
 import { ModalTatuagem } from '../componentes/modal-tatuagem';
 
+/** Só entram as sessões da própria pessoa: os valores das outras vêm vazios. */
 const soma = (lista: SessaoAgenda[]) =>
-  lista.filter((s) => s.status !== 'CANCELADA').reduce((t, s) => t + Number(s.valor ?? 0), 0);
+  lista
+    .filter((s) => s.status !== 'CANCELADA' && s.valoresVisiveis)
+    .reduce((t, s) => t + Number(s.valor ?? 0), 0);
 
 /** Quem é atendido hoje, quanto entra e o que vem depois. */
 @Component({
@@ -18,6 +22,7 @@ const soma = (lista: SessaoAgenda[]) =>
 })
 export class Home {
   protected readonly agenda = inject(Agenda);
+  protected readonly autenticacao = inject(Autenticacao);
   protected readonly hoje = hojeIso();
   protected readonly hojeExtenso = dataPorExtenso(this.hoje);
   protected readonly dinheiro = dinheiro;
@@ -45,6 +50,8 @@ export class Home {
   constructor() {
     effect(() => {
       this.agenda.versao();
+      // Os valores dependem de quem está identificado.
+      this.autenticacao.conta();
       void this.carregar();
     });
   }

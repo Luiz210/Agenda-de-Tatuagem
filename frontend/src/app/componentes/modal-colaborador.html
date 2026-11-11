@@ -1,0 +1,109 @@
+<dialog #dialogo class="modal" (close)="fechar.emit()" (click)="fecharPeloFundo($event)">
+  <form class="modal-corpo" (submit)="enviar($event)">
+    <header class="modal-topo">
+      <div>
+        <h2>{{ colaborador() ? 'Editar colaborador' : 'Novo colaborador' }}</h2>
+        @if (colaborador(); as c) {
+          <p>{{ c.nome }}</p>
+        }
+      </div>
+      <button type="button" class="botao secundario fechar" aria-label="Fechar" (click)="dialogo.close()">✕</button>
+    </header>
+
+    @if (erro()) {
+      <p class="aviso-erro" role="alert">{{ erro() }}</p>
+    }
+
+    <fieldset>
+      <legend>Dados</legend>
+      <div class="linha-campos">
+        <label class="campo">
+          Nome
+          <input name="nome" required maxlength="100" autocomplete="off" [value]="colaborador()?.nome ?? ''" />
+        </label>
+        <label class="campo">
+          Função
+          <input name="funcao" maxlength="60" list="funcoes" autocomplete="off" placeholder="Ex.: Tatuador"
+            [value]="colaborador()?.funcao ?? ''" />
+          <datalist id="funcoes">
+            <option value="Tatuador"></option>
+            <option value="Piercer"></option>
+            <option value="Recepção"></option>
+          </datalist>
+        </label>
+      </div>
+      <div class="linha-campos">
+        <label class="campo">
+          <span>Telefone <small>(opcional)</small></span>
+          <input name="telefone" type="tel" inputmode="tel" placeholder="(16) 99999-9999" autocomplete="off"
+            [value]="telefoneFormatado(colaborador()?.telefone)" />
+        </label>
+        <label class="campo">
+          Perfil
+          <select name="perfil">
+            <option value="PADRAO" [selected]="colaborador()?.perfil !== 'ADMIN'">Padrão</option>
+            <option value="ADMIN" [selected]="colaborador()?.perfil === 'ADMIN'">Administrador</option>
+          </select>
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Aluguel</legend>
+      <div class="linha-campos">
+        <label class="campo">
+          Valor do aluguel (R$)
+          <input name="valorAluguel" inputmode="decimal" placeholder="0,00" [value]="colaborador()?.valorAluguel ?? ''" />
+        </label>
+        <label class="campo">
+          Dia do pagamento
+          <input name="diaPagamentoAluguel" type="number" min="1" max="31" placeholder="Ex.: 10"
+            [value]="colaborador()?.diaPagamentoAluguel ?? ''" />
+        </label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Acesso</legend>
+      <div class="linha-campos">
+        <label class="campo">
+          Nome de usuário
+          <input name="nomeUsuario" required minlength="3" maxlength="50" autocomplete="off"
+            [value]="colaborador()?.nomeUsuario ?? ''" />
+        </label>
+        <label class="campo">
+          <span>E-mail <small>(opcional)</small></span>
+          <input name="email" type="email" maxlength="150" autocomplete="off" [value]="colaborador()?.email ?? ''" />
+        </label>
+      </div>
+      <div class="linha-campos">
+        <label class="campo">
+          <span>Senha @if (colaborador()) {<small>(vazio mantém a atual)</small>}</span>
+          <input name="senha" type="password" minlength="8" autocomplete="new-password" [required]="!colaborador()" />
+        </label>
+        <label class="campo">
+          <span>Código do estúdio @if (colaborador()) {<small>(vazio mantém o atual)</small>}</span>
+          <input name="pin" type="password" inputmode="numeric" pattern="\d{4,6}" maxlength="6" autocomplete="off"
+            [required]="!colaborador()" />
+        </label>
+      </div>
+      <p class="vazio-texto">
+        A senha é para usar a agenda de outro computador. O código (4 a 6 números) identifica a pessoa no computador do
+        estúdio. Ela pode trocá-lo depois em "Meu código".
+      </p>
+    </fieldset>
+
+    <div class="acoes">
+      <button class="botao" [disabled]="ocupado()">{{ ocupado() ? 'Salvando...' : 'Salvar' }}</button>
+      @if (colaborador(); as c) {
+        @if (confirmarExclusao()) {
+          <span>Excluir {{ c.nome }}? O histórico e as tatuagens dele continuam.</span>
+          <button type="button" class="botao" [disabled]="ocupado()" (click)="excluir()">Sim, excluir</button>
+          <button type="button" class="link-acao" (click)="confirmarExclusao.set(false)">Não</button>
+        } @else {
+          <button type="button" class="link-acao" (click)="confirmarExclusao.set(true)">Excluir colaborador</button>
+        }
+      }
+    </div>
+  </form>
+</dialog>

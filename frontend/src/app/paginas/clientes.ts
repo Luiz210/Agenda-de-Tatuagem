@@ -1,5 +1,6 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
+import { Autenticacao } from '../core/autenticacao';
 import { Agenda, Cliente, mensagemDeErro } from '../core/agenda';
 import { dataCurta } from '../core/datas';
 import { telefoneFormatado, valorOuTraco } from '../core/formatos';
@@ -15,6 +16,7 @@ const semAcento = (t: string) => t.normalize('NFD').replace(/\p{Diacritic}/gu, '
 })
 export class Clientes {
   private readonly agenda = inject(Agenda);
+  protected readonly autenticacao = inject(Autenticacao);
   private readonly router = inject(Router);
   protected readonly clientes = signal<Cliente[]>([]);
   protected readonly busca = signal('');
@@ -39,6 +41,7 @@ export class Clientes {
   constructor() {
     effect(() => {
       this.agenda.versao();
+      this.autenticacao.conta();
       void this.carregar();
     });
   }

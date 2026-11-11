@@ -29,3 +29,6 @@ section { display: grid; gap: 0.6rem; }
 .acoes.pequenas { gap: 0.4rem 0.8rem; }
 .bloco { display: grid; gap: 0.75rem; }
 footer { align-items: center; border-top: 1px solid var(--linha); display: flex; flex-wrap: wrap; gap: 0.75rem; padding-top: 0.9rem; }
+.opcao { align-items: center; cursor: pointer; display: flex; font-size: 0.9rem; gap: 0.5rem; }
+.opcao input { accent-color: var(--vermelho); }
+.aviso-info .link-acao { margin-left: 0.5rem; }

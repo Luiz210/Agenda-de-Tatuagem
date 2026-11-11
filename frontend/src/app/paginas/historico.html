@@ -1,0 +1,75 @@
+<header class="cabecalho">
+  <div>
+    <h1 class="titulo-pagina">Histórico</h1>
+    <p class="sub-pagina">Quem incluiu, alterou ou excluiu cada dado do estúdio.</p>
+  </div>
+</header>
+
+@if (erro()) {
+  <p class="aviso-erro" role="alert">{{ erro() }}</p>
+}
+
+@if (!podeVer()) {
+  <p class="aviso-info">
+    O histórico é só para administradores.
+    @if (autenticacao.estudio()) {
+      <button type="button" class="link-acao" (click)="identificar()">Digitar código de administrador</button>
+    }
+  </p>
+} @else {
+  <div class="filtros">
+    <label class="campo">
+      O quê
+      <select [value]="entidade()" (change)="entidade.set($any($event.target).value)">
+        <option value="">Tudo</option>
+        @for (e of entidades; track e[0]) {
+          <option [value]="e[0]">{{ e[1] }}</option>
+        }
+      </select>
+    </label>
+    <label class="campo">
+      Quem
+      <select [value]="usuarioId()" (change)="usuarioId.set($any($event.target).value)">
+        <option value="">Todos</option>
+        @for (p of colaboradores.pessoas(); track p.id) {
+          <option [value]="p.id">{{ p.nome }}</option>
+        }
+      </select>
+    </label>
+    <label class="campo">
+      De
+      <input type="date" [value]="inicio()" (change)="inicio.set($any($event.target).value)" />
+    </label>
+    <label class="campo">
+      Até
+      <input type="date" [value]="fim()" (change)="fim.set($any($event.target).value)" />
+    </label>
+  </div>
+
+  <ol class="registros">
+    @for (r of registros(); track r.id) {
+      <li [class]="r.acao.toLowerCase()">
+        <div class="linha">
+          <strong>{{ r.usuarioNome || 'Sem identificação' }}</strong>
+          <span>{{ acoes[r.acao] }} {{ nomeDaEntidade(r.entidade).toLowerCase() }}
+            @if (r.registroId) {
+              nº {{ r.registroId }}
+            }
+          </span>
+          <small>{{ quando(r) }} · {{ r.origem === 'ESTUDIO' ? 'no estúdio' : 'de outro computador' }}</small>
+        </div>
+        @if (r.detalhes) {
+          <pre>{{ r.detalhes }}</pre>
+        }
+      </li>
+    } @empty {
+      @if (!carregando()) {
+        <li class="vazio-texto">Nenhuma alteração neste período.</li>
+      }
+    }
+  </ol>
+
+  @if (temMais()) {
+    <button type="button" class="botao secundario" [disabled]="carregando()" (click)="carregar(true)">Carregar mais</button>
+  }
+}

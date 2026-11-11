@@ -13,3 +13,4 @@ figure button { background: rgb(0 0 0 / 70%); border: 0; border-radius: 50%; col
 .adicionar-foto { align-items: center; border: 1px dashed var(--suave); border-radius: 8px; color: var(--suave); cursor: pointer; display: flex; font-size: 0.85rem; height: 5rem; justify-content: center; width: 5rem; }
 .adicionar-foto:hover { border-color: var(--texto); color: var(--texto); }
 .adicionar-foto input { display: none; }
+.sinal-pago { align-self: end; padding-bottom: 0.55rem; }

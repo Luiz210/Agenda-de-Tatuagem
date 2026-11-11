@@ -3,6 +3,8 @@ package com.agenda.tatuagem.agenda;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+import org.hibernate.annotations.ColumnDefault;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -15,7 +17,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
-/** Parte do valor de uma tatuagem já recebida, como o sinal. */
+/** Parte do valor de uma tatuagem: o sinal ou um pagamento recebido. */
 @Entity
 @Table(name = "PAGAMENTO")
 @Getter
@@ -41,4 +43,14 @@ public class Pagamento {
 
 	@Column(length = 200)
 	private String observacao;
+
+	/** Adiantamento combinado para reservar o horário. */
+	@ColumnDefault("false")
+	@Column(nullable = false)
+	private boolean sinal;
+
+	/** Falso só para um sinal combinado que ainda não foi pago. */
+	@ColumnDefault("true")
+	@Column(nullable = false)
+	private boolean pago = true;
 }

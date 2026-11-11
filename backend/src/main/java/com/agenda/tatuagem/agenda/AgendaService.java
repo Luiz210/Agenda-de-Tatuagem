@@ -23,19 +23,24 @@ import com.agenda.tatuagem.agenda.AgendaDTOs.PagamentoDetalhe;
 import com.agenda.tatuagem.agenda.AgendaDTOs.SessaoAgenda;
 import com.agenda.tatuagem.agenda.AgendaDTOs.SessaoDados;
 import com.agenda.tatuagem.agenda.AgendaDTOs.SessaoDetalhe;
+import com.agenda.tatuagem.agenda.AgendaDTOs.SinalResumo;
 import com.agenda.tatuagem.agenda.AgendaDTOs.TatuagemDados;
 import com.agenda.tatuagem.agenda.AgendaDTOs.TatuagemDetalhe;
+import com.agenda.tatuagem.autenticacao.Usuario;
 import com.agenda.tatuagem.autenticacao.UsuarioAtual;
 
 import jakarta.persistence.EntityManager;
 
 /**
- * Clientes, tatuagens, sessões e pagamentos. Os dados são do estúdio: todas as
- * contas do mesmo servidor veem e alteram a mesma agenda.
+ * Clientes, tatuagens, sessões e pagamentos. A agenda e os clientes são do
+ * estúdio: todos veem e alteram. Os valores de cada tatuagem são só do tatuador
+ * responsável por ela.
  */
 @Service
 @Transactional
 public class AgendaService {
+
+	private static final String NAO_CANCELADA = " s.status <> com.agenda.tatuagem.agenda.StatusSessao.CANCELADA ";
 
 	private final EntityManager em;
 
@@ -49,11 +54,13 @@ public class AgendaService {
 	public List<ClienteResumo> clientes() {
 		List<Cliente> clientes = em.createQuery("select c from Cliente c order by lower(c.nome)", Cliente.class)
 				.getResultList();
-		Map<Long, Long> tatuagens = mapa("select t.cliente.id, count(t) from Tatuagem t group by t.cliente.id");
-		Map<Long, BigDecimal> pagos = mapa(
-				"select p.tatuagem.cliente.id, sum(p.valor) from Pagamento p group by p.tatuagem.cliente.id");
-		Map<Long, LocalDate> ultimas = mapa("select s.tatuagem.cliente.id, max(s.data) from SessaoTatuagem s"
-				+ " where s.status <> com.agenda.tatuagem.agenda.StatusSessao.CANCELADA group by s.tatuagem.cliente.id");
+		Map<Long, Long> tatuagens = mapa(em.createQuery(
+				"select t.cliente.id, count(t) from Tatuagem t group by t.cliente.id", Object[].class));
+		Map<Long, BigDecimal> pagos = mapa(em.createQuery("select p.tatuagem.cliente.id, sum(p.valor) from Pagamento p"
+				+ " where p.pago = true and p.tatuagem.responsavel.id = :eu group by p.tatuagem.cliente.id",
+				Object[].class).setParameter("eu", UsuarioAtual.get()));
+		Map<Long, LocalDate> ultimas = mapa(em.createQuery("select s.tatuagem.cliente.id, max(s.data)"
+				+ " from SessaoTatuagem s where" + NAO_CANCELADA + "group by s.tatuagem.cliente.id", Object[].class));
 		return clientes.stream()
 				.map(c -> resumo(c, tatuagens.getOrDefault(c.getId(), 0L), pagos.get(c.getId()),
 						ultimas.get(c.getId())))
@@ -93,7 +100,10 @@ public class AgendaService {
 				.setParameter("c", cliente)
 				.getResultList();
 		List<TatuagemDetalhe> tatuagens = ids.stream().map(this::tatuagem).toList();
-		BigDecimal pago = tatuagens.stream().map(TatuagemDetalhe::totalPago).reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal pago = tatuagens.stream()
+				.filter(TatuagemDetalhe::valoresVisiveis)
+				.map(TatuagemDetalhe::totalPago)
+				.reduce(BigDecimal.ZERO, BigDecimal::add);
 		LocalDate ultima = tatuagens.stream()
 				.flatMap(t -> t.sessoes().stream())
 				.filter(s -> s.status() != StatusSessao.CANCELADA)
@@ -108,54 +118,106 @@ public class AgendaService {
 	@Transactional(readOnly = true)
 	public TatuagemDetalhe tatuagem(Long id) {
 		Tatuagem t = buscar(Tatuagem.class, id, "Tatuagem");
+		boolean visiveis = valoresVisiveis(t);
 		List<SessaoDetalhe> sessoes = em.createQuery(
 				"select s from SessaoTatuagem s where s.tatuagem = :t order by s.data, s.hora", SessaoTatuagem.class)
 				.setParameter("t", t)
 				.getResultStream()
-				.map(AgendaService::detalhe)
+				.map(s -> detalhe(s, visiveis))
 				.toList();
-		List<PagamentoDetalhe> pagamentos = em
-				.createQuery("select p from Pagamento p where p.tatuagem = :t order by p.data, p.id", Pagamento.class)
-				.setParameter("t", t)
-				.getResultStream()
-				.map(p -> new PagamentoDetalhe(p.getId(), p.getData(), p.getValor(), p.getForma(), p.getObservacao()))
-				.toList();
+		List<PagamentoDetalhe> pagamentos = !visiveis ? List.of()
+				: em.createQuery("select p from Pagamento p where p.tatuagem = :t order by p.data, p.id",
+						Pagamento.class)
+						.setParameter("t", t)
+						.getResultStream()
+						.map(AgendaService::detalhe)
+						.toList();
 		List<ImagemDetalhe> imagens = em.createQuery("select new com.agenda.tatuagem.agenda.AgendaDTOs$ImagemDetalhe("
 				+ "i.id, i.nome, i.tipo) from Imagem i where i.tatuagem = :t order by i.id", ImagemDetalhe.class)
 				.setParameter("t", t)
 				.getResultList();
-		BigDecimal pago = pagamentos.stream().map(PagamentoDetalhe::valor).reduce(BigDecimal.ZERO, BigDecimal::add);
+		BigDecimal pago = !visiveis ? null
+				: pagamentos.stream()
+						.filter(PagamentoDetalhe::pago)
+						.map(PagamentoDetalhe::valor)
+						.reduce(BigDecimal.ZERO, BigDecimal::add);
 		Cliente c = t.getCliente();
-		return new TatuagemDetalhe(t.getId(), c.getId(), c.getNome(), c.getTelefone(), t.getDescricao(),
-				t.getLocalCorpo(), t.getValorTotal(), pago, sessoes, pagamentos, imagens);
+		Usuario r = t.getResponsavel();
+		return new TatuagemDetalhe(t.getId(), c.getId(), c.getNome(), c.getTelefone(), r != null ? r.getId() : null,
+				r != null ? r.getNome() : null, visiveis, t.getDescricao(), t.getLocalCorpo(),
+				visiveis ? t.getValorTotal() : null, pago, sessoes, pagamentos, imagens);
 	}
 
-	/** Cria a tatuagem e, se veio junto, a primeira sessão. */
+	/** Cria a tatuagem e, se vieram junto, a primeira sessão e o sinal. */
 	public TatuagemDetalhe criarTatuagem(TatuagemDados dados) {
+		UsuarioAtual.exigirIdentificado();
 		Tatuagem t = new Tatuagem();
-		preencher(t, dados);
+		preencherBasico(t, dados);
+		t.setResponsavel(dados.responsavelId() != null ? colaborador(dados.responsavelId()) : euMesmo());
+		t.setValorTotal(naoNegativo(dados.valorTotal(), "O valor total"));
 		t.setCriadoEm(LocalDateTime.now());
 		t.setCriadoPor(UsuarioAtual.get());
 		em.persist(t);
 		if (dados.primeiraSessao() != null) {
 			SessaoTatuagem s = new SessaoTatuagem();
 			s.setTatuagem(t);
-			preencher(s, dados.primeiraSessao());
+			preencher(s, dados.primeiraSessao(), true);
 			em.persist(s);
+		}
+		if (dados.sinal() != null && dados.sinal().signum() > 0) {
+			Pagamento p = new Pagamento();
+			p.setTatuagem(t);
+			p.setData(LocalDate.now());
+			p.setValor(dados.sinal());
+			p.setSinal(true);
+			p.setPago(!Boolean.FALSE.equals(dados.sinalPago()));
+			em.persist(p);
 		}
 		em.flush();
 		return tatuagem(t.getId());
 	}
 
+	/**
+	 * Todos podem corrigir descrição e local. O valor só muda por quem é
+	 * responsável (para os outros ele nem aparece), e o responsável só é trocado
+	 * por ele mesmo ou por um administrador.
+	 */
 	public void alterarTatuagem(Long id, TatuagemDados dados) {
-		preencher(buscar(Tatuagem.class, id, "Tatuagem"), dados);
+		UsuarioAtual.exigirIdentificado();
+		Tatuagem t = buscar(Tatuagem.class, id, "Tatuagem");
+		preencherBasico(t, dados);
+		if (valoresVisiveis(t)) {
+			t.setValorTotal(naoNegativo(dados.valorTotal(), "O valor total"));
+		}
+		Long atual = t.getResponsavel() != null ? t.getResponsavel().getId() : null;
+		if (dados.responsavelId() != null && !dados.responsavelId().equals(atual)) {
+			if (!UsuarioAtual.admin() && atual != null && !atual.equals(UsuarioAtual.get())) {
+				throw new RegraException(HttpStatus.FORBIDDEN,
+						"Só o responsável pela tatuagem ou um administrador pode passá-la para outra pessoa.");
+			}
+			Usuario novo = colaborador(dados.responsavelId());
+			// As sessões que estavam com o responsável antigo acompanham a troca.
+			em.createQuery("select s from SessaoTatuagem s where s.tatuagem = :t", SessaoTatuagem.class)
+					.setParameter("t", t)
+					.getResultStream()
+					.filter(s -> s.getResponsavel() == null || s.getResponsavel().getId().equals(atual))
+					.forEach(s -> s.setResponsavel(novo));
+			t.setResponsavel(novo);
+		}
 	}
 
-	/** Remove a tatuagem com as sessões, os pagamentos e as imagens dela. */
+	/**
+	 * Remove a tatuagem com as sessões, os pagamentos e as imagens dela. Um a um,
+	 * para cada exclusão entrar no histórico.
+	 */
 	public void removerTatuagem(Long id) {
+		UsuarioAtual.exigirIdentificado();
 		Tatuagem t = buscar(Tatuagem.class, id, "Tatuagem");
-		for (String entidade : List.of("Imagem", "Pagamento", "SessaoTatuagem")) {
-			em.createQuery("delete from " + entidade + " x where x.tatuagem = :t").setParameter("t", t).executeUpdate();
+		for (Class<?> tipo : List.of(Imagem.class, Pagamento.class, SessaoTatuagem.class)) {
+			em.createQuery("select x from " + tipo.getSimpleName() + " x where x.tatuagem = :t", tipo)
+					.setParameter("t", t)
+					.getResultList()
+					.forEach(em::remove);
 		}
 		em.remove(t);
 	}
@@ -163,46 +225,60 @@ public class AgendaService {
 	// ---------- Sessões ----------
 
 	@Transactional(readOnly = true)
-	public List<SessaoAgenda> sessoes(LocalDate inicio, LocalDate fim) {
+	public List<SessaoAgenda> sessoes(LocalDate inicio, LocalDate fim, Long responsavelId) {
 		if (inicio == null || fim == null || fim.isBefore(inicio)) {
 			throw RegraException.invalido("Informe o início e o fim do período.");
 		}
-		return agenda(em.createQuery("select s from SessaoTatuagem s join fetch s.tatuagem t join fetch t.cliente"
-				+ " where s.data between :inicio and :fim order by s.data, s.hora", SessaoTatuagem.class)
+		String filtro = responsavelId != null ? " and s.responsavel.id = :responsavel" : "";
+		var consulta = em.createQuery("select s from SessaoTatuagem s join fetch s.tatuagem t join fetch t.cliente"
+				+ " left join fetch s.responsavel where s.data between :inicio and :fim" + filtro
+				+ " order by s.data, s.hora", SessaoTatuagem.class)
 				.setParameter("inicio", inicio)
-				.setParameter("fim", fim)
-				.getResultList());
+				.setParameter("fim", fim);
+		if (responsavelId != null) {
+			consulta.setParameter("responsavel", responsavelId);
+		}
+		return agenda(consulta.getResultList());
 	}
 
 	/** As próximas sessões ainda agendadas, a partir de um dia. */
 	@Transactional(readOnly = true)
-	public List<SessaoAgenda> proximas(LocalDate aPartirDe, int limite) {
-		return agenda(em.createQuery("select s from SessaoTatuagem s join fetch s.tatuagem t join fetch t.cliente"
-				+ " where s.data >= :dia and s.status = com.agenda.tatuagem.agenda.StatusSessao.AGENDADA"
+	public List<SessaoAgenda> proximas(LocalDate aPartirDe, int limite, Long responsavelId) {
+		String filtro = responsavelId != null ? " and s.responsavel.id = :responsavel" : "";
+		var consulta = em.createQuery("select s from SessaoTatuagem s join fetch s.tatuagem t join fetch t.cliente"
+				+ " left join fetch s.responsavel where s.data >= :dia"
+				+ " and s.status = com.agenda.tatuagem.agenda.StatusSessao.AGENDADA" + filtro
 				+ " order by s.data, s.hora", SessaoTatuagem.class)
 				.setParameter("dia", aPartirDe)
-				.setMaxResults(Math.max(1, Math.min(limite, 50)))
-				.getResultList());
+				.setMaxResults(Math.max(1, Math.min(limite, 50)));
+		if (responsavelId != null) {
+			consulta.setParameter("responsavel", responsavelId);
+		}
+		return agenda(consulta.getResultList());
 	}
 
 	public SessaoDetalhe criarSessao(SessaoDados dados) {
+		UsuarioAtual.exigirIdentificado();
 		if (dados.tatuagemId() == null) {
 			throw RegraException.invalido("Escolha a tatuagem desta sessão.");
 		}
 		SessaoTatuagem s = new SessaoTatuagem();
 		s.setTatuagem(buscar(Tatuagem.class, dados.tatuagemId(), "Tatuagem"));
-		preencher(s, dados);
+		preencher(s, dados, valoresVisiveis(s.getTatuagem()));
 		em.persist(s);
-		return detalhe(s);
+		return detalhe(s, valoresVisiveis(s.getTatuagem()));
 	}
 
 	public SessaoDetalhe alterarSessao(Long id, SessaoDados dados) {
+		UsuarioAtual.exigirIdentificado();
 		SessaoTatuagem s = buscar(SessaoTatuagem.class, id, "Sessão");
-		preencher(s, dados);
-		return detalhe(s);
+		boolean visiveis = valoresVisiveis(s.getTatuagem());
+		preencher(s, dados, visiveis);
+		return detalhe(s, visiveis);
 	}
 
 	public void removerSessao(Long id) {
+		UsuarioAtual.exigirIdentificado();
 		em.remove(buscar(SessaoTatuagem.class, id, "Sessão"));
 	}
 
@@ -212,26 +288,32 @@ public class AgendaService {
 		if (dados.tatuagemId() == null) {
 			throw RegraException.invalido("Escolha a tatuagem deste pagamento.");
 		}
-		if (dados.valor() == null || dados.valor().signum() <= 0) {
-			throw RegraException.invalido("Informe um valor maior que zero.");
-		}
+		Tatuagem t = buscar(Tatuagem.class, dados.tatuagemId(), "Tatuagem");
+		exigirResponsavel(t);
 		Pagamento p = new Pagamento();
-		p.setTatuagem(buscar(Tatuagem.class, dados.tatuagemId(), "Tatuagem"));
-		p.setData(dados.data() != null ? dados.data() : LocalDate.now());
-		p.setValor(dados.valor());
-		p.setForma(limitar(dados.forma(), 20, "A forma de pagamento"));
-		p.setObservacao(limitar(dados.observacao(), 200, "A observação"));
+		p.setTatuagem(t);
+		preencher(p, dados);
 		em.persist(p);
-		return new PagamentoDetalhe(p.getId(), p.getData(), p.getValor(), p.getForma(), p.getObservacao());
+		return detalhe(p);
+	}
+
+	public PagamentoDetalhe alterarPagamento(Long id, PagamentoDados dados) {
+		Pagamento p = buscar(Pagamento.class, id, "Pagamento");
+		exigirResponsavel(p.getTatuagem());
+		preencher(p, dados);
+		return detalhe(p);
 	}
 
 	public void removerPagamento(Long id) {
-		em.remove(buscar(Pagamento.class, id, "Pagamento"));
+		Pagamento p = buscar(Pagamento.class, id, "Pagamento");
+		exigirResponsavel(p.getTatuagem());
+		em.remove(p);
 	}
 
 	// ---------- Imagens ----------
 
 	public ImagemDetalhe adicionarImagem(Long tatuagemId, String nome, String tipo, byte[] conteudo) {
+		UsuarioAtual.exigirIdentificado();
 		if (tipo == null || !tipo.startsWith("image/")) {
 			throw RegraException.invalido("Envie uma imagem (JPG, PNG ou WEBP).");
 		}
@@ -256,10 +338,30 @@ public class AgendaService {
 	}
 
 	public void removerImagem(Long id) {
+		UsuarioAtual.exigirIdentificado();
 		em.remove(buscar(Imagem.class, id, "Imagem"));
 	}
 
 	// ---------- Apoio ----------
+
+	/**
+	 * Os valores são de quem faz a tatuagem. As antigas, sem responsável, ficam
+	 * visíveis para quem estiver identificado.
+	 */
+	private static boolean valoresVisiveis(Tatuagem t) {
+		if (!UsuarioAtual.identificado()) {
+			return false;
+		}
+		return t.getResponsavel() == null || t.getResponsavel().getId().equals(UsuarioAtual.get());
+	}
+
+	private static void exigirResponsavel(Tatuagem t) {
+		UsuarioAtual.exigirIdentificado();
+		if (!valoresVisiveis(t)) {
+			throw new RegraException(HttpStatus.FORBIDDEN,
+					"Os pagamentos desta tatuagem são do tatuador responsável por ela.");
+		}
+	}
 
 	private List<SessaoAgenda> agenda(List<SessaoTatuagem> sessoes) {
 		if (sessoes.isEmpty()) {
@@ -269,9 +371,8 @@ public class AgendaService {
 
 		// Número da sessão dentro da tatuagem (1 de 3), sem contar as canceladas.
 		Map<Long, List<Long>> ordem = new HashMap<>();
-		em.createQuery("select s.tatuagem.id, s.id from SessaoTatuagem s where s.tatuagem.id in :ids"
-				+ " and s.status <> com.agenda.tatuagem.agenda.StatusSessao.CANCELADA order by s.data, s.hora, s.id",
-				Object[].class)
+		em.createQuery("select s.tatuagem.id, s.id from SessaoTatuagem s where s.tatuagem.id in :ids and"
+				+ NAO_CANCELADA + "order by s.data, s.hora, s.id", Object[].class)
 				.setParameter("ids", tatuagens)
 				.getResultStream()
 				.forEach(l -> ordem.computeIfAbsent((Long) l[0], k -> new ArrayList<>()).add((Long) l[1]));
@@ -281,21 +382,46 @@ public class AgendaService {
 				.setParameter("ids", tatuagens)
 				.getResultStream()
 				.forEach(l -> capas.put((Long) l[0], (Long) l[1]));
+		// Sinal de cada tatuagem: soma e se ainda falta pagar alguma parte.
+		Map<Long, BigDecimal> sinais = new HashMap<>();
+		Map<Long, Boolean> sinaisPagos = new HashMap<>();
+		em.createQuery("select p.tatuagem.id, p.valor, p.pago from Pagamento p where p.sinal = true"
+				+ " and p.tatuagem.id in :ids", Object[].class)
+				.setParameter("ids", tatuagens)
+				.getResultStream()
+				.forEach(l -> {
+					Long t = (Long) l[0];
+					sinais.merge(t, (BigDecimal) l[1], BigDecimal::add);
+					sinaisPagos.merge(t, (Boolean) l[2], Boolean::logicalAnd);
+				});
 
 		return sessoes.stream().map(s -> {
 			Tatuagem t = s.getTatuagem();
 			Cliente c = t.getCliente();
+			Usuario r = s.getResponsavel() != null ? s.getResponsavel() : t.getResponsavel();
+			boolean visiveis = valoresVisiveis(t);
 			List<Long> daTatuagem = ordem.getOrDefault(t.getId(), List.of());
-			return new SessaoAgenda(s.getId(), s.getData(), s.getHora(), s.getDuracaoMinutos(), s.getValor(),
-					s.getStatus(), s.getObservacao(), t.getId(), t.getDescricao(), t.getLocalCorpo(), t.getValorTotal(),
-					c.getId(), c.getNome(), c.getTelefone(), daTatuagem.indexOf(s.getId()) + 1, daTatuagem.size(),
-					capas.get(t.getId()));
+			SinalResumo sinal = sinais.containsKey(t.getId())
+					? new SinalResumo(visiveis ? sinais.get(t.getId()) : null, sinaisPagos.get(t.getId()))
+					: null;
+			return new SessaoAgenda(s.getId(), s.getData(), s.getHora(), s.getDuracaoMinutos(),
+					visiveis ? s.getValor() : null, s.getStatus(), s.getObservacao(), t.getId(), t.getDescricao(),
+					t.getLocalCorpo(), visiveis ? t.getValorTotal() : null, c.getId(), c.getNome(), c.getTelefone(),
+					daTatuagem.indexOf(s.getId()) + 1, daTatuagem.size(), capas.get(t.getId()),
+					r != null ? r.getId() : null, r != null ? r.getNome() : null, visiveis, sinal);
 		}).toList();
 	}
 
-	private static SessaoDetalhe detalhe(SessaoTatuagem s) {
-		return new SessaoDetalhe(s.getId(), s.getData(), s.getHora(), s.getDuracaoMinutos(), s.getValor(),
-				s.getStatus(), s.getObservacao());
+	private static SessaoDetalhe detalhe(SessaoTatuagem s, boolean visiveis) {
+		Usuario r = s.getResponsavel();
+		return new SessaoDetalhe(s.getId(), r != null ? r.getId() : null, r != null ? r.getNome() : null,
+				s.getData(), s.getHora(), s.getDuracaoMinutos(), visiveis ? s.getValor() : null, s.getStatus(),
+				s.getObservacao());
+	}
+
+	private static PagamentoDetalhe detalhe(Pagamento p) {
+		return new PagamentoDetalhe(p.getId(), p.getData(), p.getValor(), p.getForma(), p.getObservacao(),
+				p.isSinal(), p.isPago());
 	}
 
 	private static ClienteResumo resumo(Cliente c, long tatuagens, BigDecimal pago, LocalDate ultima) {
@@ -304,6 +430,7 @@ public class AgendaService {
 	}
 
 	private void preencher(Cliente c, ClienteDados d) {
+		UsuarioAtual.exigirIdentificado();
 		String nome = limpar(d.nome());
 		if (nome.isEmpty()) {
 			throw RegraException.invalido("Informe o nome do cliente.");
@@ -319,7 +446,7 @@ public class AgendaService {
 		c.setObservacoes(limitar(d.observacoes(), 1000, "As observações"));
 	}
 
-	private void preencher(Tatuagem t, TatuagemDados d) {
+	private void preencherBasico(Tatuagem t, TatuagemDados d) {
 		if (d.clienteId() == null) {
 			throw RegraException.invalido("Escolha o cliente.");
 		}
@@ -330,10 +457,10 @@ public class AgendaService {
 		t.setCliente(cliente(d.clienteId()));
 		t.setDescricao(limitar(descricao, 500, "A descrição"));
 		t.setLocalCorpo(limitar(d.localCorpo(), 80, "O local do corpo"));
-		t.setValorTotal(naoNegativo(d.valorTotal(), "O valor total"));
 	}
 
-	private void preencher(SessaoTatuagem s, SessaoDados d) {
+	/** Sem permissão para ver os valores, o valor da sessão fica como estava. */
+	private void preencher(SessaoTatuagem s, SessaoDados d, boolean alteraValor) {
 		if (d.data() == null || d.hora() == null) {
 			throw RegraException.invalido("Informe o dia e o horário da sessão.");
 		}
@@ -343,11 +470,43 @@ public class AgendaService {
 		s.setData(d.data());
 		s.setHora(d.hora());
 		s.setDuracaoMinutos(d.duracaoMinutos());
-		s.setValor(naoNegativo(d.valor(), "O valor da sessão"));
+		if (alteraValor) {
+			s.setValor(naoNegativo(d.valor(), "O valor da sessão"));
+		}
 		if (d.status() != null) {
 			s.setStatus(d.status());
 		}
 		s.setObservacao(limitar(d.observacao(), 500, "A observação"));
+		if (d.responsavelId() != null) {
+			s.setResponsavel(colaborador(d.responsavelId()));
+		} else if (s.getResponsavel() == null) {
+			s.setResponsavel(s.getTatuagem().getResponsavel());
+		}
+	}
+
+	private void preencher(Pagamento p, PagamentoDados d) {
+		if (d.valor() == null || d.valor().signum() <= 0) {
+			throw RegraException.invalido("Informe um valor maior que zero.");
+		}
+		p.setData(d.data() != null ? d.data() : LocalDate.now());
+		p.setValor(d.valor());
+		p.setForma(limitar(d.forma(), 20, "A forma de pagamento"));
+		p.setObservacao(limitar(d.observacao(), 200, "A observação"));
+		p.setSinal(Boolean.TRUE.equals(d.sinal()));
+		// Um pagamento comum já entrou; só o sinal pode estar combinado e ainda não pago.
+		p.setPago(!p.isSinal() || !Boolean.FALSE.equals(d.pago()));
+	}
+
+	private Usuario euMesmo() {
+		return em.find(Usuario.class, UsuarioAtual.get());
+	}
+
+	private Usuario colaborador(Long id) {
+		Usuario u = id == null ? null : em.find(Usuario.class, id);
+		if (u == null || !u.isAtivo()) {
+			throw RegraException.naoEncontrado("Colaborador");
+		}
+		return u;
 	}
 
 	private Cliente cliente(Long id) {
@@ -363,9 +522,9 @@ public class AgendaService {
 	}
 
 	@SuppressWarnings("unchecked")
-	private <V> Map<Long, V> mapa(String jpql) {
+	private static <V> Map<Long, V> mapa(jakarta.persistence.TypedQuery<Object[]> consulta) {
 		Map<Long, V> mapa = new HashMap<>();
-		em.createQuery(jpql, Object[].class).getResultStream().forEach(l -> mapa.put((Long) l[0], (V) l[1]));
+		consulta.getResultStream().forEach(l -> mapa.put((Long) l[0], (V) l[1]));
 		return mapa;
 	}
 

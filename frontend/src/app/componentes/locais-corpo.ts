@@ -5,4 +5,5 @@ export const LOCAIS_DO_CORPO = [
   'Tornozelo', 'Pé', 'Rosto', 'Atrás da orelha',
 ];
 
-export const DURACOES = [30, 60, 90, 120, 180, 240, 300, 360, 480];
+/** Inclui sessões longas, de um dia inteiro de trabalho. */
+export const DURACOES = [30, 60, 90, 120, 180, 240, 300, 360, 420, 480, 540, 600, 720];

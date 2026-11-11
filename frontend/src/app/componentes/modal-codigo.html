@@ -1,0 +1,41 @@
+<dialog #dialogo class="modal codigo" (close)="fechou()" (click)="fecharPeloFundo($event)">
+  <form class="modal-corpo" (submit)="enviar($event)">
+    <header class="modal-topo">
+      <div>
+        <h2>Quem está usando?</h2>
+        <p>{{ comSenha() ? 'Entre com seu usuário e senha.' : 'Digite seu código para salvar esta alteração.' }}</p>
+      </div>
+      <button type="button" class="botao secundario fechar" aria-label="Cancelar" (click)="dialogo.close()">✕</button>
+    </header>
+
+    @if (erro()) {
+      <p class="aviso-erro" role="alert">{{ erro() }}</p>
+    }
+
+    @if (comSenha()) {
+      <label class="campo">
+        Nome de usuário ou e-mail
+        <input name="identificador" required autocomplete="off" />
+      </label>
+      <label class="campo">
+        Senha
+        <input name="senha" type="password" required autocomplete="off" />
+      </label>
+    } @else {
+      <label class="campo">
+        <span class="oculto">Código</span>
+        <input #campoCodigo class="pin" name="pin" type="password" inputmode="numeric" pattern="\d{4,6}" maxlength="6"
+          required autocomplete="off" placeholder="••••" />
+      </label>
+    }
+
+    <p class="nota">As alterações dos próximos 5 minutos ficam no seu nome.</p>
+
+    <div class="acoes">
+      <button class="botao" [disabled]="ocupado()">{{ ocupado() ? 'Conferindo...' : 'Confirmar' }}</button>
+      <button type="button" class="link-acao" (click)="trocarModo()">
+        {{ comSenha() ? 'Usar meu código' : 'Ainda não tenho código' }}
+      </button>
+    </div>
+  </form>
+</dialog>

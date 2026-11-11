@@ -58,6 +58,15 @@
       }
       @if (novaTatuagem()) {
         <label class="campo">
+          Tatuador
+          <select required [value]="responsavel()" (change)="responsavel.set($any($event.target).value)">
+            <option value="" disabled>Escolha quem vai tatuar</option>
+            @for (p of pessoas(); track p.id) {
+              <option [value]="p.id" [selected]="String(p.id) === responsavel()">{{ p.nome }}</option>
+            }
+          </select>
+        </label>
+        <label class="campo">
           Descrição
           <textarea name="descricao" required maxlength="500" placeholder="Ex.: fechamento de braço, tema japonês"></textarea>
         </label>
@@ -76,6 +85,18 @@
             <input inputmode="decimal" placeholder="0,00" [value]="valorTotal()" (input)="digitarTotal($any($event.target).value)" />
           </label>
         </div>
+        <div class="linha-campos">
+          <label class="campo">
+            <span>Sinal (R$) <small>(opcional)</small></span>
+            <input inputmode="decimal" placeholder="0,00" [value]="sinal()" (input)="sinal.set($any($event.target).value)" />
+          </label>
+          @if (sinal()) {
+            <label class="opcao sinal-pago">
+              <input type="checkbox" name="sinalPago" checked />
+              <span>O sinal já foi pago</span>
+            </label>
+          }
+        </div>
         <div class="campo">
           <span>Imagens <small>(referência, desenho)</small></span>
           <div class="fotos">
@@ -92,9 +113,13 @@
           </div>
         </div>
       } @else if (tatuagemEscolhida(); as t) {
-        <p class="vazio-texto">
-          Já pago: {{ valorOuTraco(t.totalPago) }} de {{ valorOuTraco(t.valorTotal) }}.
-        </p>
+        @if (t.valoresVisiveis) {
+          <p class="vazio-texto">
+            Já pago: {{ valorOuTraco(t.totalPago) }} de {{ valorOuTraco(t.valorTotal) }}.
+          </p>
+        } @else {
+          <p class="vazio-texto">Tatuagem de {{ t.responsavelNome || 'outro tatuador' }}.</p>
+        }
       }
     </fieldset>
 
@@ -107,6 +132,16 @@
         </label>
       }
       @if (agendarSessao()) {
+        @if (!novaTatuagem()) {
+          <label class="campo">
+            Quem atende nesta sessão
+            <select [value]="responsavel()" (change)="responsavel.set($any($event.target).value)">
+              @for (p of pessoas(); track p.id) {
+                <option [value]="p.id" [selected]="String(p.id) === responsavel()">{{ p.nome }}</option>
+              }
+            </select>
+          </label>
+        }
         <div class="linha-campos">
           @if (!data()) {
             <label class="campo">
@@ -127,10 +162,12 @@
               }
             </select>
           </label>
-          <label class="campo">
-            Valor desta sessão (R$)
-            <input inputmode="decimal" placeholder="0,00" [value]="valorSessao()" (input)="digitarValorSessao($any($event.target).value)" />
-          </label>
+          @if (novaTatuagem() || tatuagemEscolhida()?.valoresVisiveis) {
+            <label class="campo">
+              Valor desta sessão (R$)
+              <input inputmode="decimal" placeholder="0,00" [value]="valorSessao()" (input)="digitarValorSessao($any($event.target).value)" />
+            </label>
+          }
         </div>
       }
     </fieldset>
