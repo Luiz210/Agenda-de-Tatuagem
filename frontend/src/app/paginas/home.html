@@ -64,6 +64,29 @@
   </section>
 }
 
+@if (paraContatar().length) {
+  <section class="bloco">
+    <div class="titulo-bloco">
+      <h2>Clientes para chamar de volta</h2>
+      <a routerLink="/clientes" [queryParams]="{ filtro: 'contatar' }" class="link-acao">
+        Ver {{ paraContatar().length === 1 ? 'o cliente' : 'todos os ' + paraContatar().length }}
+      </a>
+    </div>
+    <ul class="reengajar">
+      @for (c of paraContatar().slice(0, 5); track c.id) {
+        <li>
+          <a [routerLink]="['/clientes', c.id]">
+            <strong>{{ c.nome }}</strong>
+            @if (c.ultimaSessao) {
+              <small>última tatuagem {{ tempoDesde(c.ultimaSessao) }}</small>
+            }
+          </a>
+        </li>
+      }
+    </ul>
+  </section>
+}
+
 @if (agendando()) {
   <app-modal-agendar (fechar)="agendando.set(false)" />
 }

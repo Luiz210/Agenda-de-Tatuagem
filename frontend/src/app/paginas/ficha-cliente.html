@@ -32,6 +32,27 @@
     <p class="observacoes">{{ f.cliente.observacoes }}</p>
   }
 
+  @if (f.cliente.paraContatar && f.cliente.ultimaSessao) {
+    <div class="reengajar" role="status">
+      <div>
+        <strong>Não aparece {{ tempoDesde(f.cliente.ultimaSessao) }}.</strong>
+        <span>
+          @if (f.cliente.ultimoContato) {
+            O último contato foi {{ tempoDesde(f.cliente.ultimoContato) }}.
+          } @else {
+            Ninguém o procurou desde então.
+          }
+        </span>
+      </div>
+      <div class="acoes">
+        @if (whatsappReengajamento(); as link) {
+          <a class="botao-whats" [href]="link" target="_blank" rel="noopener"><app-icone-whatsapp /> Chamar de volta</a>
+        }
+        <button type="button" class="botao" (click)="registrandoContato.set(true)">Marcar como contatado</button>
+      </div>
+    </div>
+  }
+
   <section class="numeros" aria-label="Resumo do cliente">
     <div><span>Tatuagens</span><strong>{{ f.tatuagens.length }}</strong></div>
     @if (autenticacao.conta()) {
@@ -75,6 +96,38 @@
       </li>
     } @empty {
       <li class="vazio-texto">Nenhuma tatuagem na ficha ainda.</li>
+    }
+  </ul>
+
+  <h2 class="titulo-secao">Contatos</h2>
+  @if (registrandoContato()) {
+    <form class="novo-contato" (submit)="registrarContato($event)">
+      <label class="campo">
+        <span>Como foi o contato? <small>(opcional)</small></span>
+        <input name="observacao" maxlength="500" placeholder="Ex.: mandei mensagem, vai pensar e responde semana que vem" />
+      </label>
+      <div class="acoes">
+        <button class="botao" [disabled]="ocupado()">Salvar contato</button>
+        <button type="button" class="link-acao" (click)="registrandoContato.set(false)">Cancelar</button>
+      </div>
+    </form>
+  } @else if (!f.cliente.paraContatar) {
+    <button type="button" class="link-acao registrar" (click)="registrandoContato.set(true)">+ Registrar contato</button>
+  }
+  <ul class="contatos-lista">
+    @for (c of f.contatos; track c.id) {
+      <li>
+        <div>
+          <strong>{{ quando(c) }}</strong>
+          <small>por {{ c.usuarioNome || 'alguém do estúdio' }}</small>
+          @if (c.observacao) {
+            <p>{{ c.observacao }}</p>
+          }
+        </div>
+        <button type="button" class="link-acao" (click)="removerContato(c)">Desfazer</button>
+      </li>
+    } @empty {
+      <li class="vazio-texto">Nenhum contato registrado.</li>
     }
   </ul>
 

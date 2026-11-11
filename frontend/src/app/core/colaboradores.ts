@@ -69,6 +69,7 @@ export const ENTIDADES: Record<string, string> = {
   Pagamento: 'Pagamento',
   Imagem: 'Imagem',
   Usuario: 'Colaborador',
+  ContatoCliente: 'Contato com cliente',
 };
 
 @Injectable({ providedIn: 'root' })

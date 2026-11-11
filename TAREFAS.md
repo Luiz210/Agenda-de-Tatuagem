@@ -2,7 +2,7 @@
 
 Levantadas na reunião com o estúdio (novembro de 2026). Cada fase vira uma versão publicada.
 
-## Fase 1: base do estúdio (feita, falta testar)
+## Fase 1: base do estúdio (publicada na 1.0.2)
 
 - [x] Colaboradores: listar, cadastrar, editar, excluir (nome, função, telefone, aluguel, dia de pagamento, perfil).
 - [x] Perfis administrador e padrão. Só o administrador cadastra colaboradores e verá o financeiro.
@@ -13,11 +13,13 @@ Levantadas na reunião com o estúdio (novembro de 2026). Cada fase vira uma ver
 - [x] Sinal: valor e situação (pago / não pago), aviso de "sinal pendente" na agenda.
 - [x] Durações longas na agenda (até 12 horas).
 
-## Fase 2: clientes (reengajamento)
+## Fase 2: clientes (reengajamento) (feita, falta testar)
 
-- [ ] Destaque para clientes com a última tatuagem há 6 meses ou mais.
-- [ ] Marcar como "Contatado": tira o destaque, que volta 6 meses depois do contato.
-- [ ] Histórico de contatos e filtro de não contatados (também na visão da agenda).
+- [x] Destaque para clientes com a última tatuagem há 6 meses ou mais (quem tem horário marcado não entra).
+- [x] Marcar como "Contatado": tira o destaque, que volta 6 meses depois do contato.
+- [x] Histórico de contatos na ficha (quem, quando, observação), com "Desfazer".
+- [x] Filtro "Para contatar" em Clientes e bloco "Clientes para chamar de volta" na tela Hoje.
+- [x] WhatsApp com mensagem de reengajamento pronta.
 
 ## Fase 3: estoque e produtos
 

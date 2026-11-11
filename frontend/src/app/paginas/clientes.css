@@ -1,30 +1,63 @@
 .cabecalho { align-items: end; display: flex; flex-wrap: wrap; gap: 1rem; justify-content: space-between; margin-bottom: 1.25rem; }
-.busca { margin-bottom: 1rem; max-width: 28rem; }
-.oculto { clip: rect(0 0 0 0); height: 1px; overflow: hidden; position: absolute; width: 1px; }
+.filtros { align-items: center; display: flex; flex-wrap: wrap; gap: 0.75rem 1.25rem; margin-bottom: 1rem; }
+.busca { flex: 1; margin: 0; max-width: 28rem; min-width: 14rem; }
+.abas { border: 1px solid var(--linha); border-radius: 999px; display: inline-flex; padding: 0.2rem; }
+.abas button {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  color: var(--suave);
+  cursor: pointer;
+  display: inline-flex;
+  font: 600 0.9rem var(--corpo);
+  gap: 0.4rem;
+  padding: 0.4rem 0.9rem;
+}
+.abas button.ativa { background: var(--noite); color: #fff; }
+.contador { background: var(--vermelho); border-radius: 999px; color: #fff; font-size: 0.75rem; min-width: 1.3rem; padding: 0.05rem 0.4rem; text-align: center; }
+.aviso-info { margin-bottom: 1rem; max-width: 52rem; }
+
 .lista { display: grid; gap: 0.4rem; list-style: none; margin: 0; padding: 0; }
-.lista button {
+.lista > li:not(.vazio-texto) {
   align-items: center;
   background: var(--papel);
   border: 1px solid var(--linha);
   border-radius: 10px;
+  display: flex;
+  gap: 0.5rem;
+  padding-right: 0.75rem;
+}
+.lista > li:hover { border-color: var(--texto); }
+/* Cliente sumido: o mesmo vermelho do restante do aplicativo. */
+.lista > li.para-contatar { border-left: 4px solid var(--vermelho); }
+.linha {
+  align-items: center;
+  background: none;
+  border: 0;
   color: inherit;
   cursor: pointer;
   display: grid;
+  flex: 1;
   font: inherit;
   gap: 1rem;
   grid-template-columns: auto minmax(0, 1fr) repeat(3, 7.5rem);
+  min-width: 0;
   padding: 0.7rem 1rem;
   text-align: left;
-  width: 100%;
 }
-.lista button:hover { border-color: var(--texto); }
 .inicial { align-items: center; background: var(--noite); border-radius: 50%; color: #fff; display: flex; font: 700 1rem var(--titulo); height: 2.4rem; justify-content: center; width: 2.4rem; }
-.nome { display: grid; min-width: 0; }
-.nome strong, .nome small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nome { display: grid; justify-items: start; min-width: 0; }
+.nome strong, .nome small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.nome .etiqueta { margin-top: 0.25rem; }
 small { color: var(--suave); font-size: 0.8rem; }
 .dado { display: grid; font-weight: 600; }
 .dado small { font-weight: 400; }
+.acoes-contato { display: flex; flex: none; gap: 0.4rem; }
 @media (max-width: 760px) {
-  .lista button { grid-template-columns: auto minmax(0, 1fr); }
+  .linha { grid-template-columns: auto minmax(0, 1fr); }
   .dado { display: none; }
+  .lista > li.para-contatar { flex-wrap: wrap; padding-bottom: 0.6rem; }
+  .acoes-contato { margin-left: 4.4rem; }
+  .botao-whats span { display: none; }
 }

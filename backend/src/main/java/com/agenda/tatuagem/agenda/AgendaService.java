@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.agenda.tatuagem.agenda.AgendaDTOs.ClienteDados;
 import com.agenda.tatuagem.agenda.AgendaDTOs.ClienteResumo;
+import com.agenda.tatuagem.agenda.AgendaDTOs.ContatoDados;
+import com.agenda.tatuagem.agenda.AgendaDTOs.ContatoDetalhe;
 import com.agenda.tatuagem.agenda.AgendaDTOs.Ficha;
 import com.agenda.tatuagem.agenda.AgendaDTOs.ImagemDetalhe;
 import com.agenda.tatuagem.agenda.AgendaDTOs.PagamentoDados;
@@ -40,6 +42,9 @@ import jakarta.persistence.EntityManager;
 @Transactional
 public class AgendaService {
 
+	/** Depois de quanto tempo sem tatuar (e sem ser procurado) o cliente volta a ser destacado. */
+	static final int MESES_PARA_RECONTATO = 6;
+
 	private static final String NAO_CANCELADA = " s.status <> com.agenda.tatuagem.agenda.StatusSessao.CANCELADA ";
 
 	private final EntityManager em;
@@ -61,9 +66,11 @@ public class AgendaService {
 				Object[].class).setParameter("eu", UsuarioAtual.get()));
 		Map<Long, LocalDate> ultimas = mapa(em.createQuery("select s.tatuagem.cliente.id, max(s.data)"
 				+ " from SessaoTatuagem s where" + NAO_CANCELADA + "group by s.tatuagem.cliente.id", Object[].class));
+		Map<Long, LocalDateTime> contatos = mapa(em.createQuery(
+				"select k.cliente.id, max(k.data) from ContatoCliente k group by k.cliente.id", Object[].class));
 		return clientes.stream()
 				.map(c -> resumo(c, tatuagens.getOrDefault(c.getId(), 0L), pagos.get(c.getId()),
-						ultimas.get(c.getId())))
+						ultimas.get(c.getId()), contatos.get(c.getId())))
 				.toList();
 	}
 
@@ -73,7 +80,7 @@ public class AgendaService {
 		cliente.setCriadoEm(LocalDateTime.now());
 		cliente.setCriadoPor(UsuarioAtual.get());
 		em.persist(cliente);
-		return resumo(cliente, 0, null, null);
+		return resumo(cliente, 0, null, null, null);
 	}
 
 	public void alterarCliente(Long id, ClienteDados dados) {
@@ -89,6 +96,7 @@ public class AgendaService {
 			throw new RegraException(HttpStatus.CONFLICT,
 					"Este cliente tem tatuagens na ficha. Remova as tatuagens antes de remover o cliente.");
 		}
+		contatosDe(cliente).forEach(em::remove);
 		em.remove(cliente);
 	}
 
@@ -110,7 +118,36 @@ public class AgendaService {
 				.map(SessaoDetalhe::data)
 				.max(LocalDate::compareTo)
 				.orElse(null);
-		return new Ficha(resumo(cliente, tatuagens.size(), pago, ultima), tatuagens);
+		List<ContatoDetalhe> contatos = contatosDe(cliente).stream().map(AgendaService::detalheContato).toList();
+		LocalDateTime ultimoContato = contatos.isEmpty() ? null : contatos.get(0).data();
+		return new Ficha(resumo(cliente, tatuagens.size(), pago, ultima, ultimoContato), tatuagens, contatos);
+	}
+
+	// ---------- Contatos (reengajamento) ----------
+
+	/** Marca o cliente como contatado: o destaque some e só volta depois de 6 meses. */
+	public ContatoDetalhe registrarContato(Long clienteId, ContatoDados dados) {
+		UsuarioAtual.exigirIdentificado();
+		ContatoCliente contato = new ContatoCliente();
+		contato.setCliente(cliente(clienteId));
+		contato.setData(LocalDateTime.now());
+		contato.setUsuario(euMesmo());
+		contato.setObservacao(limitar(dados != null ? dados.observacao() : null, 500, "A observação"));
+		em.persist(contato);
+		return detalheContato(contato);
+	}
+
+	/** Desfaz um contato marcado por engano. */
+	public void removerContato(Long id) {
+		UsuarioAtual.exigirIdentificado();
+		em.remove(buscar(ContatoCliente.class, id, "Contato"));
+	}
+
+	private List<ContatoCliente> contatosDe(Cliente cliente) {
+		return em.createQuery("select k from ContatoCliente k left join fetch k.usuario where k.cliente = :c"
+				+ " order by k.data desc, k.id desc", ContatoCliente.class)
+				.setParameter("c", cliente)
+				.getResultList();
 	}
 
 	// ---------- Tatuagens ----------
@@ -424,9 +461,30 @@ public class AgendaService {
 				p.isSinal(), p.isPago());
 	}
 
-	private static ClienteResumo resumo(Cliente c, long tatuagens, BigDecimal pago, LocalDate ultima) {
+	private static ClienteResumo resumo(Cliente c, long tatuagens, BigDecimal pago, LocalDate ultima,
+			LocalDateTime ultimoContato) {
 		return new ClienteResumo(c.getId(), c.getNome(), c.getTelefone(), c.getInstagram(), c.getObservacoes(),
-				tatuagens, pago != null ? pago : BigDecimal.ZERO, ultima);
+				tatuagens, pago != null ? pago : BigDecimal.ZERO, ultima, ultimoContato,
+				paraContatar(ultima, ultimoContato, LocalDate.now()));
+	}
+
+	/**
+	 * A última tatuagem (a data mais recente de sessão não cancelada, então quem
+	 * tem horário marcado nunca entra) foi há 6 meses ou mais, e o último
+	 * contato, se houve, também. Quem nunca tatuou não entra.
+	 */
+	static boolean paraContatar(LocalDate ultimaSessao, LocalDateTime ultimoContato, LocalDate hoje) {
+		LocalDate limite = hoje.minusMonths(MESES_PARA_RECONTATO);
+		if (ultimaSessao == null || ultimaSessao.isAfter(limite)) {
+			return false;
+		}
+		return ultimoContato == null || !ultimoContato.toLocalDate().isAfter(limite);
+	}
+
+	private static ContatoDetalhe detalheContato(ContatoCliente k) {
+		Usuario u = k.getUsuario();
+		return new ContatoDetalhe(k.getId(), k.getData(), u != null ? u.getId() : null, u != null ? u.getNome() : null,
+				k.getObservacao());
 	}
 
 	private void preencher(Cliente c, ClienteDados d) {

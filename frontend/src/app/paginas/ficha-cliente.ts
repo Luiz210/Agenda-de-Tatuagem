@@ -1,9 +1,9 @@
 import { Component, computed, effect, inject, input, signal } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { Autenticacao } from '../core/autenticacao';
-import { Agenda, Ficha, Tatuagem, mensagemDeErro } from '../core/agenda';
-import { dataCurta } from '../core/datas';
-import { linkWhatsapp, telefoneFormatado, valorOuTraco } from '../core/formatos';
+import { Agenda, Contato, Ficha, Tatuagem, mensagemDeErro } from '../core/agenda';
+import { dataCurta, tempoDesde } from '../core/datas';
+import { linkWhatsapp, mensagemDeReengajamento, telefoneFormatado, valorOuTraco } from '../core/formatos';
 import { IconeWhatsapp } from '../componentes/icone-whatsapp';
 import { ModalAgendar } from '../componentes/modal-agendar';
 import { ModalCliente } from '../componentes/modal-cliente';
@@ -33,8 +33,16 @@ export class FichaCliente {
   protected readonly telefoneFormatado = telefoneFormatado;
   protected readonly valorOuTraco = valorOuTraco;
   protected readonly dataCurta = dataCurta;
+  protected readonly tempoDesde = tempoDesde;
+  protected readonly registrandoContato = signal(false);
+  protected readonly ocupado = signal(false);
 
   protected readonly whatsapp = computed(() => linkWhatsapp(this.ficha()?.cliente.telefone));
+  /** Para o cliente sumido, o WhatsApp já abre com a mensagem de reengajamento. */
+  protected readonly whatsappReengajamento = computed(() => {
+    const c = this.ficha()?.cliente;
+    return c ? linkWhatsapp(c.telefone, mensagemDeReengajamento(c.nome)) : null;
+  });
   protected readonly totalContratado = computed(
     () =>
       this.ficha()
@@ -66,6 +74,39 @@ export class FichaCliente {
 
   protected proximaSessao(t: Tatuagem) {
     return t.sessoes.find((s) => s.status === 'AGENDADA');
+  }
+
+  protected async registrarContato(evento: Event) {
+    evento.preventDefault();
+    const observacao = String(new FormData(evento.target as HTMLFormElement).get('observacao') ?? '');
+    this.ocupado.set(true);
+    try {
+      await this.agenda.registrarContato(Number(this.id()), observacao);
+      this.registrandoContato.set(false);
+      this.erro.set('');
+    } catch (e) {
+      this.erro.set(mensagemDeErro(e));
+    } finally {
+      this.ocupado.set(false);
+    }
+  }
+
+  protected async removerContato(c: Contato) {
+    try {
+      await this.agenda.removerContato(c.id);
+    } catch (e) {
+      this.erro.set(mensagemDeErro(e));
+    }
+  }
+
+  protected quando(c: Contato) {
+    return new Date(c.data).toLocaleString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
   }
 
   protected async remover() {

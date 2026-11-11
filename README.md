@@ -64,3 +64,14 @@ Para isso, este repositório precisa ser **público**.
 ## Próximos passos
 
 Veja [TAREFAS.md](TAREFAS.md).
+
+## Dados de demonstração
+
+Para testar as telas com dados de exemplo (colaboradores, clientes, tatuagens, sessões, sinais, imagens, contatos e histórico):
+
+```
+cd backend
+.\mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=demo"
+```
+
+Os dados são acrescentados ao banco atual uma única vez e nada é apagado. Os colaboradores de exemplo usam a senha `senha1234` e os códigos 4821 (Rafa), 5932 (Bia), 6043 (Duda) e 7154 (Carol, administradora). O app instalado nunca carrega esses dados.

@@ -50,3 +50,12 @@ export function linkWhatsapp(telefone: string | null | undefined, mensagem = '')
   const texto = mensagem ? `?text=${encodeURIComponent(mensagem)}` : '';
   return `https://wa.me/${numero}${texto}`;
 }
+
+/** Mensagem para chamar de volta um cliente que não aparece há um tempo. */
+export function mensagemDeReengajamento(nome: string): string {
+  const primeiroNome = nome.trim().split(/\s+/)[0];
+  return (
+    `Oi, ${primeiroNome}! Tudo bem? Faz um tempinho que você não passa aqui no estúdio. ` +
+    'Está pensando na próxima tatuagem? Se quiser, a gente já vê um horário para você.'
+  );
+}

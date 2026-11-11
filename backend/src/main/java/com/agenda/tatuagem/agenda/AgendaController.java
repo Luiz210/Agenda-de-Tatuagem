@@ -20,6 +20,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.agenda.tatuagem.agenda.AgendaDTOs.ClienteDados;
 import com.agenda.tatuagem.agenda.AgendaDTOs.ClienteResumo;
+import com.agenda.tatuagem.agenda.AgendaDTOs.ContatoDados;
+import com.agenda.tatuagem.agenda.AgendaDTOs.ContatoDetalhe;
 import com.agenda.tatuagem.agenda.AgendaDTOs.Ficha;
 import com.agenda.tatuagem.agenda.AgendaDTOs.ImagemDetalhe;
 import com.agenda.tatuagem.agenda.AgendaDTOs.PagamentoDados;
@@ -63,6 +65,17 @@ public class AgendaController {
 	@DeleteMapping("clientes/{id}")
 	public ResponseEntity<Void> removerCliente(@PathVariable Long id) {
 		agenda.removerCliente(id);
+		return ResponseEntity.noContent().build();
+	}
+
+	@PostMapping("clientes/{id}/contatos")
+	public ContatoDetalhe registrarContato(@PathVariable Long id, @RequestBody(required = false) ContatoDados dados) {
+		return agenda.registrarContato(id, dados);
+	}
+
+	@DeleteMapping("contatos/{id}")
+	public ResponseEntity<Void> removerContato(@PathVariable Long id) {
+		agenda.removerContato(id);
 		return ResponseEntity.noContent().build();
 	}
 

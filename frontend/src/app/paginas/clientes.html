@@ -10,15 +10,35 @@
   <p class="aviso-erro" role="alert">{{ erro() }}</p>
 }
 
-<label class="campo busca">
-  <span class="oculto">Buscar cliente</span>
-  <input type="search" placeholder="Buscar por nome, telefone ou Instagram" [value]="busca()" (input)="busca.set($any($event.target).value)" />
-</label>
+<div class="filtros">
+  <div class="abas" role="tablist" aria-label="Quais clientes mostrar">
+    <button type="button" role="tab" [attr.aria-selected]="!soParaContatar()" [class.ativa]="!soParaContatar()"
+      (click)="soParaContatar.set(false)">Todos</button>
+    <button type="button" role="tab" [attr.aria-selected]="soParaContatar()" [class.ativa]="soParaContatar()"
+      (click)="soParaContatar.set(true)">
+      Para contatar
+      @if (paraContatar().length) {
+        <span class="contador">{{ paraContatar().length }}</span>
+      }
+    </button>
+  </div>
+  <label class="campo busca">
+    <span class="oculto">Buscar cliente</span>
+    <input type="search" placeholder="Buscar por nome, telefone ou Instagram" [value]="busca()" (input)="busca.set($any($event.target).value)" />
+  </label>
+</div>
+
+@if (soParaContatar()) {
+  <p class="aviso-info">
+    Clientes que fizeram a última tatuagem há 6 meses ou mais e não foram procurados nesse tempo. Ao marcar como
+    contatado, o cliente sai da lista e volta daqui a 6 meses se não marcar nada.
+  </p>
+}
 
 <ul class="lista">
   @for (c of filtrados(); track c.id) {
-    <li>
-      <button type="button" (click)="abrir(c)">
+    <li [class.para-contatar]="c.paraContatar">
+      <button type="button" class="linha" (click)="abrir(c)">
         <span class="inicial" aria-hidden="true">{{ c.nome.charAt(0).toUpperCase() }}</span>
         <span class="nome">
           <strong>{{ c.nome }}</strong>
@@ -28,14 +48,37 @@
               · {{ '@' + c.instagram }}
             }
           </small>
+          @if (c.paraContatar && c.ultimaSessao) {
+            <span class="etiqueta alerta">Sem vir {{ tempoDesde(c.ultimaSessao) }}</span>
+          }
         </span>
         <span class="dado"><small>Tatuagens</small>{{ c.tatuagens }}</span>
         <span class="dado"><small>Pago a você</small>{{ autenticacao.conta() ? valorOuTraco(c.totalPago) : '—' }}</span>
         <span class="dado"><small>Última sessão</small>{{ c.ultimaSessao ? dataCurta(c.ultimaSessao) : '—' }}</span>
       </button>
+      @if (c.paraContatar) {
+        <div class="acoes-contato">
+          @if (whatsapp(c); as link) {
+            <a class="botao-whats" [href]="link" target="_blank" rel="noopener" title="Chamar no WhatsApp">
+              <app-icone-whatsapp /> <span>Chamar</span>
+            </a>
+          }
+          <button type="button" class="botao secundario" [disabled]="ocupado() === c.id" (click)="marcarContatado(c)">
+            Contatado
+          </button>
+        </div>
+      }
     </li>
   } @empty {
-    <li class="vazio-texto">{{ busca() ? 'Nenhum cliente encontrado.' : 'Nenhum cliente cadastrado ainda.' }}</li>
+    <li class="vazio-texto">
+      @if (busca()) {
+        Nenhum cliente encontrado.
+      } @else if (soParaContatar()) {
+        Ninguém para contatar agora.
+      } @else {
+        Nenhum cliente cadastrado ainda.
+      }
+    </li>
   }
 </ul>
 

@@ -1,8 +1,8 @@
 import { Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { Agenda, SessaoAgenda, mensagemDeErro } from '../core/agenda';
+import { Agenda, Cliente, SessaoAgenda, mensagemDeErro } from '../core/agenda';
 import { Autenticacao } from '../core/autenticacao';
-import { dataPorExtenso, dinheiro, hojeIso, inicioEFimDoMes, somarDias } from '../core/datas';
+import { dataPorExtenso, dinheiro, hojeIso, inicioEFimDoMes, somarDias, tempoDesde } from '../core/datas';
 import { CartaoSessao } from '../componentes/cartao-sessao';
 import { ModalAgendar } from '../componentes/modal-agendar';
 import { ModalTatuagem } from '../componentes/modal-tatuagem';
@@ -30,10 +30,13 @@ export class Home {
   protected readonly deHoje = signal<SessaoAgenda[]>([]);
   protected readonly doMes = signal<SessaoAgenda[]>([]);
   protected readonly proximas = signal<SessaoAgenda[]>([]);
+  /** Clientes que sumiram há 6 meses ou mais, dos mais antigos para os mais recentes. */
+  protected readonly paraContatar = signal<Cliente[]>([]);
   protected readonly carregado = signal(false);
   protected readonly erro = signal('');
   protected readonly agendando = signal(false);
   protected readonly aberta = signal<SessaoAgenda | null>(null);
+  protected readonly tempoDesde = tempoDesde;
 
   protected readonly ativasHoje = computed(() => this.deHoje().filter((s) => s.status !== 'CANCELADA'));
   protected readonly aReceberHoje = computed(() => soma(this.deHoje()));
@@ -60,11 +63,17 @@ export class Home {
     const agora = new Date();
     const mes = inicioEFimDoMes(agora.getFullYear(), agora.getMonth());
     try {
-      const [hoje, doMes, proximas] = await Promise.all([
+      const [hoje, doMes, proximas, clientes] = await Promise.all([
         this.agenda.sessoes(this.hoje, this.hoje),
         this.agenda.sessoes(mes.inicio, mes.fim),
         this.agenda.proximas(somarDias(this.hoje, 1), 6),
+        this.agenda.clientes(),
       ]);
+      this.paraContatar.set(
+        clientes
+          .filter((c) => c.paraContatar)
+          .sort((a, b) => (a.ultimaSessao ?? '').localeCompare(b.ultimaSessao ?? '')),
+      );
       this.deHoje.set(hoje);
       this.doMes.set(doMes);
       this.proximas.set(proximas);

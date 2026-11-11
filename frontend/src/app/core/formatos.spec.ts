@@ -36,3 +36,18 @@ describe('formatos', () => {
     expect(duracaoEmTexto(null)).toBe('');
   });
 });
+
+describe('reengajamento', () => {
+  it('conta o tempo sem vir em meses completos', async () => {
+    const { mesesDesde, tempoDesde } = await import('./datas');
+    expect(mesesDesde('2026-05-11', '2026-11-11')).toBe(6);
+    expect(mesesDesde('2026-05-12', '2026-11-11')).toBe(5);
+    expect(tempoDesde('2025-09-01', '2026-11-11')).toBe('há 1 ano e 2 meses');
+    expect(tempoDesde('2026-11-01', '2026-11-11')).toBe('há menos de um mês');
+  });
+
+  it('chama o cliente pelo primeiro nome', async () => {
+    const { mensagemDeReengajamento } = await import('./formatos');
+    expect(mensagemDeReengajamento('Ana Souza')).toMatch(/^Oi, Ana!/);
+  });
+});

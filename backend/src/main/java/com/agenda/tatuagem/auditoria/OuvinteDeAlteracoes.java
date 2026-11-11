@@ -58,7 +58,7 @@ class OuvinteDeAlteracoes implements PostInsertEventListener, PostUpdateEventLis
 			Map.entry("tipo", "Tipo"), Map.entry("nomeUsuario", "Usuário"), Map.entry("email", "E-mail"),
 			Map.entry("senhaHash", "Senha"), Map.entry("pinHash", "Código"), Map.entry("perfil", "Perfil"),
 			Map.entry("ativo", "Ativo"), Map.entry("funcao", "Função"), Map.entry("valorAluguel", "Aluguel"),
-			Map.entry("diaPagamentoAluguel", "Dia do aluguel"));
+			Map.entry("diaPagamentoAluguel", "Dia do aluguel"), Map.entry("usuario", "Quem"));
 
 	private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 	private static final DateTimeFormatter DATA_HORA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");

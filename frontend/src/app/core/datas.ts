@@ -75,3 +75,22 @@ export function inicioEFimDoMes(ano: number, mes: number) {
 /** "qui., 12/11": cabe ao lado do horário. */
 export const diaCurto = (iso: string) =>
   dataDe(iso).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+
+/** Meses completos entre uma data (ISO) e hoje. */
+export function mesesDesde(iso: string, hoje = hojeIso()): number {
+  const [a1, m1, d1] = iso.slice(0, 10).split('-').map(Number);
+  const [a2, m2, d2] = hoje.split('-').map(Number);
+  return Math.max(0, (a2 - a1) * 12 + (m2 - m1) - (d2 < d1 ? 1 : 0));
+}
+
+/** "há 7 meses", "há 1 ano e 2 meses". */
+export function tempoDesde(iso: string, hoje = hojeIso()): string {
+  const meses = mesesDesde(iso, hoje);
+  if (meses < 1) return 'há menos de um mês';
+  const anos = Math.floor(meses / 12);
+  const resto = meses % 12;
+  const partes = [];
+  if (anos) partes.push(anos === 1 ? '1 ano' : `${anos} anos`);
+  if (resto) partes.push(resto === 1 ? '1 mês' : `${resto} meses`);
+  return 'há ' + partes.join(' e ');
+}

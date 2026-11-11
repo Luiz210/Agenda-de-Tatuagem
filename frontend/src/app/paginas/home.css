@@ -11,3 +11,20 @@
 .sem-hoje { background: var(--papel); border: 1px dashed var(--linha); border-radius: 12px; display: grid; gap: 0.5rem; padding: 1.1rem; }
 .sem-hoje > p:first-child { font: 600 1.1rem var(--titulo); margin: 0; }
 .rotulo-proxima { color: var(--vermelho); font-size: 0.85rem; font-weight: 600; letter-spacing: 0.04em; margin: 0.4rem 0 0; text-transform: uppercase; }
+
+.reengajar { display: grid; gap: 0.4rem; list-style: none; margin: 0; padding: 0; }
+.reengajar a {
+  align-items: baseline;
+  background: var(--papel);
+  border: 1px solid var(--linha);
+  border-left: 4px solid var(--vermelho);
+  border-radius: 8px;
+  color: inherit;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.75rem;
+  padding: 0.6rem 0.9rem;
+  text-decoration: none;
+}
+.reengajar a:hover { border-color: var(--texto); border-left-color: var(--vermelho); }
+.reengajar small { color: var(--suave); }

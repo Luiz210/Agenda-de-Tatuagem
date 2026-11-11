@@ -17,6 +17,18 @@ export interface Cliente extends ClienteDados {
   tatuagens: number;
   totalPago: number;
   ultimaSessao: string | null;
+  ultimoContato: string | null;
+  /** A última tatuagem foi há 6 meses ou mais e ninguém o procurou nesse tempo. */
+  paraContatar: boolean;
+}
+
+/** Uma vez em que o estúdio procurou o cliente. */
+export interface Contato {
+  id: number;
+  data: string;
+  usuarioId: number | null;
+  usuarioNome: string | null;
+  observacao: string | null;
 }
 
 export interface Sessao {
@@ -123,6 +135,7 @@ export interface Tatuagem {
 export interface Ficha {
   cliente: Cliente;
   tatuagens: Tatuagem[];
+  contatos: Contato[];
 }
 
 /** Chamadas ao back. Toda alteração muda a versão, para as telas abertas recarregarem. */
@@ -147,6 +160,13 @@ export class Agenda {
   }
   removerCliente(id: number) {
     return this.mudar(this.http.delete<void>(`/api/clientes/${id}`));
+  }
+
+  registrarContato(clienteId: number, observacao?: string | null) {
+    return this.mudar(this.http.post<Contato>(`/api/clientes/${clienteId}/contatos`, { observacao }));
+  }
+  removerContato(id: number) {
+    return this.mudar(this.http.delete<void>(`/api/contatos/${id}`));
   }
 
   tatuagem(id: number) {

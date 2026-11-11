@@ -2,6 +2,7 @@ package com.agenda.tatuagem.agenda;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -17,12 +18,22 @@ public final class AgendaDTOs {
 	public record ClienteDados(String nome, String telefone, String instagram, String observacoes) {
 	}
 
-	/** totalPago soma só o que foi pago a quem está consultando. */
+	/**
+	 * totalPago soma só o que foi pago a quem está consultando. paraContatar: a
+	 * última tatuagem foi há 6 meses ou mais e ninguém o procurou nesse tempo.
+	 */
 	public record ClienteResumo(Long id, String nome, String telefone, String instagram, String observacoes,
-			long tatuagens, BigDecimal totalPago, LocalDate ultimaSessao) {
+			long tatuagens, BigDecimal totalPago, LocalDate ultimaSessao, LocalDateTime ultimoContato,
+			boolean paraContatar) {
 	}
 
-	public record Ficha(ClienteResumo cliente, List<TatuagemDetalhe> tatuagens) {
+	public record Ficha(ClienteResumo cliente, List<TatuagemDetalhe> tatuagens, List<ContatoDetalhe> contatos) {
+	}
+
+	public record ContatoDados(String observacao) {
+	}
+
+	public record ContatoDetalhe(Long id, LocalDateTime data, Long usuarioId, String usuarioNome, String observacao) {
 	}
 
 	/**
