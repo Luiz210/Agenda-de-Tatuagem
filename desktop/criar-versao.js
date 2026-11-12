@@ -22,7 +22,8 @@ const CABECALHOS = {
 // O publicar.bat acabou de aumentar a versão nestes arquivos: eles podem estar alterados.
 const ALTERADOS_PELA_PUBLICACAO = ['desktop/package.json', 'desktop/package-lock.json'];
 
-const git = (comando) => execSync(`git ${comando}`, { encoding: 'utf8', cwd: __dirname }).trim();
+// Sem trim no começo: na saída do "git status" os dois primeiros caracteres de cada linha importam.
+const git = (comando) => execSync(`git ${comando}`, { encoding: 'utf8', cwd: __dirname }).trimEnd();
 
 function parar(mensagem) {
   console.error(`\n${mensagem}\n`);
@@ -32,9 +33,9 @@ function parar(mensagem) {
 /** O commit publicado precisa ser exatamente o código da pasta, e já estar no GitHub. */
 function commitPublicado() {
   const pendentes = git('status --porcelain')
-    .split('\n')
-    .filter(Boolean)
-    .map((linha) => linha.slice(3).replace(/"/g, ''))
+    .split(/\r?\n/)
+    .filter((linha) => linha.length > 3)
+    .map((linha) => linha.slice(3).replace(/"/g, '').trim())
     .filter((arquivo) => !ALTERADOS_PELA_PUBLICACAO.includes(arquivo));
   if (pendentes.length) {
     parar(
