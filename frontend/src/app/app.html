@@ -73,11 +73,34 @@
 
   <nav class="lateral" aria-label="Telas">
     <a routerLink="/" routerLinkActive="ativo" [routerLinkActiveOptions]="{ exact: true }">Hoje</a>
-    <a routerLink="/agenda" routerLinkActive="ativo">Agenda</a>
-    <a routerLink="/clientes" routerLinkActive="ativo">Clientes</a>
-    <a routerLink="/estoque" routerLinkActive="ativo">Estoque</a>
-    <a routerLink="/produtos" routerLinkActive="ativo">Produtos</a>
+    <a routerLink="/agenda" routerLinkActive="ativo">
+      Agenda
+      @if (avisos()?.agenda; as n) {
+        <span class="aviso" [title]="n + (n === 1 ? ' sessão' : ' sessões') + ' para confirmar com o cliente nos próximos dias'">{{ n }}</span>
+      }
+    </a>
+    <a routerLink="/clientes" routerLinkActive="ativo">
+      Clientes
+      @if (avisos()?.clientes; as n) {
+        <span class="aviso" [title]="n + (n === 1 ? ' cliente' : ' clientes') + ' para contatar'">{{ n }}</span>
+      }
+    </a>
+    <a routerLink="/estoque" routerLinkActive="ativo">
+      Estoque
+      @if (avisos()?.estoque; as n) {
+        <span class="aviso" [title]="n + (n === 1 ? ' material' : ' materiais') + ' para comprar'">{{ n }}</span>
+      }
+    </a>
+    <a routerLink="/produtos" routerLinkActive="ativo">
+      Produtos
+      @if (avisos()?.produtos; as n) {
+        <span class="aviso" [title]="n + (n === 1 ? ' produto' : ' produtos') + ' para comprar'">{{ n }}</span>
+      }
+    </a>
     <a routerLink="/colaboradores" routerLinkActive="ativo">Colaboradores</a>
+    @if (autenticacao.admin() || autenticacao.estudio()) {
+      <a routerLink="/financeiro" routerLinkActive="ativo">Financeiro</a>
+    }
     @if (autenticacao.admin() || autenticacao.estudio()) {
       <a routerLink="/historico" routerLinkActive="ativo">Histórico</a>
     }

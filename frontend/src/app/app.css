@@ -83,7 +83,11 @@
 }
 
 .lateral a {
+  align-items: center;
   border-radius: 999px;
+  display: flex;
+  gap: 0.5rem;
+  justify-content: space-between;
   color: #d9d9d9;
   font-weight: 500;
   padding: 0.55rem 0.9rem;
@@ -126,3 +130,17 @@
 @media (max-width: 800px) {
   .topo .operador span { display: inline; }
 }
+
+/* Número de pendências ao lado do nome da tela. */
+.aviso {
+  background: var(--vermelho);
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.4;
+  min-width: 1.4rem;
+  padding: 0 0.4rem;
+  text-align: center;
+}
+.lateral a.ativo .aviso { background: #fff; color: var(--vermelho); }

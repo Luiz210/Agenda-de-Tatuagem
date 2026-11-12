@@ -103,6 +103,10 @@ public class ColaboradoresService {
 			throw Contas.invalido("O valor do aluguel não pode ser negativo.");
 		}
 		u.setValorAluguel(aluguel);
+		// A cobrança começa no mês em que o aluguel foi informado pela primeira vez.
+		if (aluguel != null && aluguel.signum() > 0 && u.getAluguelDesde() == null) {
+			u.setAluguelDesde(java.time.LocalDate.now().withDayOfMonth(1));
+		}
 		Integer dia = d.diaPagamentoAluguel();
 		if (dia != null && (dia < 1 || dia > 31)) {
 			throw Contas.invalido("O dia de pagamento do aluguel precisa ficar entre 1 e 31.");

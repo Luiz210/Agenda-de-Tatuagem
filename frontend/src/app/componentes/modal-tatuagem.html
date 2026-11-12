@@ -140,8 +140,14 @@
                     }
                   </div>
                   <div class="acoes pequenas">
-                    @if (whatsapp(s); as link) {
-                      <a class="botao-whats" [href]="link" target="_blank" rel="noopener"><app-icone-whatsapp /> Confirmar</a>
+                    @if (s.status === 'AGENDADA' && !s.confirmada) {
+                      @if (whatsapp(s); as link) {
+                        <a class="botao-whats" [href]="link" target="_blank" rel="noopener"><app-icone-whatsapp /> Confirmar</a>
+                      }
+                      <button type="button" class="link-acao" [disabled]="ocupado()" (click)="confirmar(s, true)">O cliente confirmou</button>
+                    } @else if (s.status === 'AGENDADA') {
+                      <span class="etiqueta realizada">Confirmada</span>
+                      <button type="button" class="link-acao" [disabled]="ocupado()" (click)="confirmar(s, false)">Desfazer confirmação</button>
                     }
                     @if (s.status === 'AGENDADA') {
                       <button type="button" class="link-acao" [disabled]="ocupado()" (click)="mudarStatus(s, 'REALIZADA')">Marcar como feita</button>

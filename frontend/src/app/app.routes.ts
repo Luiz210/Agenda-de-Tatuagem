@@ -5,6 +5,7 @@ import { Clientes } from './paginas/clientes';
 import { PaginaColaboradores } from './paginas/colaboradores';
 import { PaginaEstoque } from './paginas/estoque';
 import { Entrar } from './paginas/entrar';
+import { PaginaFinanceiro } from './paginas/financeiro';
 import { FichaCliente } from './paginas/ficha-cliente';
 import { PaginaHistorico } from './paginas/historico';
 import { Home } from './paginas/home';
@@ -32,6 +33,7 @@ export const routes: Routes = [
     canActivate: [exigeLogin],
   },
   { path: 'colaboradores', component: PaginaColaboradores, title: `Colaboradores | ${NOME}`, canActivate: [exigeLogin] },
+  { path: 'financeiro', component: PaginaFinanceiro, title: `Financeiro | ${NOME}`, canActivate: [exigeLogin] },
   { path: 'historico', component: PaginaHistorico, title: `Histórico | ${NOME}`, canActivate: [exigeLogin] },
   { path: '**', redirectTo: '' },
 ];

@@ -217,6 +217,10 @@ export class ModalTatuagem implements AfterViewInit {
     }
   }
 
+  protected confirmar(s: Sessao, confirmada: boolean) {
+    return this.fazer(() => this.agenda.confirmarSessao(s.id, confirmada));
+  }
+
   protected marcarComoPago(p: Pagamento) {
     return this.fazer(() =>
       this.agenda.alterarPagamento(p.id, { ...p, tatuagemId: this.tatuagemId(), pago: true, data: this.hoje }),

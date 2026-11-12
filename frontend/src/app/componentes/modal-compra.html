@@ -1,0 +1,121 @@
+<dialog #dialogo class="modal" (close)="fechar.emit()" (click)="fecharPeloFundo($event)">
+  <form class="modal-corpo" (submit)="enviar($event)">
+    <header class="modal-topo">
+      <div>
+        <h2>{{ detalhe() ? detalhe()!.compra.nome : 'Nova compra' }}</h2>
+        @if (detalhe(); as d) {
+          <p>{{ d.compra.parcelasPagas }} de {{ d.compra.parcelas }} {{ d.compra.parcelas === 1 ? 'parcela paga' : 'parcelas pagas' }}</p>
+        }
+      </div>
+      <button type="button" class="botao secundario fechar" aria-label="Fechar" (click)="dialogo.close()">✕</button>
+    </header>
+
+    @if (erro()) {
+      <p class="aviso-erro" role="alert">{{ erro() }}</p>
+    }
+
+    <label class="campo">
+      O que foi comprado
+      <input name="nome" required maxlength="150" autocomplete="off" placeholder="Ex.: Maca nova"
+        [value]="detalhe()?.compra?.nome ?? ''" />
+    </label>
+    <div class="linha-campos">
+      <label class="campo">
+        Valor total (R$)
+        <input inputmode="decimal" required placeholder="0,00" [disabled]="algumaPaga()" [value]="valorTotal()"
+          (input)="valorTotal.set($any($event.target).value)" />
+      </label>
+      <label class="campo">
+        Parcelas
+        <input type="number" min="1" max="48" required [disabled]="algumaPaga()" [value]="parcelas()"
+          (input)="parcelas.set($any($event.target).value)" />
+      </label>
+      <label class="campo">
+        1º vencimento
+        <input name="vencimento" type="date" required [disabled]="algumaPaga()" [value]="detalhe()?.compra?.vencimento ?? hoje" />
+      </label>
+    </div>
+    @if (previa()) {
+      <p class="vazio-texto">
+        {{ previa() }}{{ variasParcelas() ? ', uma por mês. Cada parcela aparece em Contas a pagar no mês dela.' : '.' }}
+        @if (algumaPaga()) {
+          Com parcelas pagas, valor, parcelas e vencimento não mudam mais.
+        }
+      </p>
+    }
+    <label class="campo">
+      <span>Observação <small>(opcional)</small></span>
+      <input name="observacao" maxlength="500" [value]="detalhe()?.compra?.observacao ?? ''" />
+    </label>
+
+    <div class="anexos">
+      <div>
+        <span class="rotulo">Comprovante</span>
+        @if (detalhe()?.compra?.comprovanteId; as id) {
+          <button type="button" class="link-acao" (click)="ver(id, 'Comprovante da compra')">Ver</button>
+        } @else if (novoComprovante(); as f) {
+          <span>{{ f.name }}</span>
+        }
+        <label class="link-acao arquivo">
+          <input type="file" accept="image/*,application/pdf" (change)="escolherComprovante($event)" />
+          {{ detalhe()?.compra?.comprovanteId || novoComprovante() ? 'Trocar' : 'Anexar' }}
+        </label>
+      </div>
+    </div>
+
+    @if (detalhe(); as d) {
+      <section>
+        <h3>Parcelas</h3>
+        <ul class="parcelas">
+          @for (p of d.parcelas; track p.id) {
+            <li>
+              <strong>{{ p.parcela }}/{{ d.compra.parcelas }}</strong>
+              <span>{{ valorOuTraco(p.valor) }}</span>
+              <span class="esconder">{{ dataCurta(p.vencimento) }}</span>
+              <span [class]="'situacao ' + p.situacao.toLowerCase()">
+                @if (p.situacao === 'PAGA') {
+                  Paga em {{ dataCurta(p.pagaEm!) }}
+                } @else if (p.situacao === 'VENCIDA') {
+                  Vencida
+                } @else {
+                  A pagar
+                }
+              </span>
+              <span>
+                @if (p.situacao === 'PAGA') {
+                  @if (p.comprovanteId; as id) {
+                    <button type="button" class="link-acao" (click)="ver(id, 'Comprovante')">Comprovante</button>
+                  }
+                  <button type="button" class="link-acao" [disabled]="ocupado()" (click)="desfazer(p)">Desfazer</button>
+                } @else {
+                  <button type="button" class="link-acao" (click)="pagando.set(p)">Pagar</button>
+                }
+              </span>
+            </li>
+          }
+        </ul>
+      </section>
+    }
+
+    <div class="acoes">
+      <button class="botao" [disabled]="ocupado()">{{ ocupado() ? 'Salvando...' : 'Salvar' }}</button>
+      @if (detalhe()) {
+        @if (confirmarExclusao()) {
+          <span>Excluir a compra e todas as parcelas{{ algumaPaga() ? ' (as saídas das pagas saem do caixa)' : '' }}?</span>
+          <button type="button" class="botao" [disabled]="ocupado()" (click)="excluir()">Sim, excluir</button>
+          <button type="button" class="link-acao" (click)="confirmarExclusao.set(false)">Não</button>
+        } @else {
+          <button type="button" class="link-acao" (click)="confirmarExclusao.set(true)">Excluir compra</button>
+        }
+      }
+    </div>
+  </form>
+</dialog>
+
+@if (pagando(); as p) {
+  <app-modal-baixa titulo="Pagar parcela" [descricao]="p.nome" [valor]="p.valor" [comComprovante]="true"
+    [registrar]="registrarPagamento" (fechar)="pagando.set(null)" />
+}
+@if (vendo(); as v) {
+  <app-visualizador-arquivo [url]="v.url" [titulo]="v.titulo" (fechar)="vendo.set(null)" />
+}

@@ -46,7 +46,8 @@
 
 @container (max-width: 34rem) {
   .cartao { align-items: stretch; flex-direction: column; gap: 0.25rem; padding: 0.35rem 0.35rem 0.75rem; }
-  .botao-whats { align-self: flex-start; margin-left: 0.5rem; }
+  .botao-whats { align-self: flex-start; }
+  .confirmacao { flex-direction: row; margin-left: 0.5rem; }
   .miniatura { display: none; }
   .principal { align-items: start; display: grid; gap: 0.25rem 0.9rem; grid-template-columns: auto minmax(0, 1fr); }
   .valor { grid-column: 2; }

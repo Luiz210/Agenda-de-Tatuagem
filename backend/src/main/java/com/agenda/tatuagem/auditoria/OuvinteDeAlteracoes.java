@@ -62,7 +62,13 @@ class OuvinteDeAlteracoes implements PostInsertEventListener, PostUpdateEventLis
 			Map.entry("categoria", "Categoria"), Map.entry("unidade", "Unidade"),
 			Map.entry("quantidade", "Quantidade"), Map.entry("limiar", "Limiar de compra"),
 			Map.entry("precoVenda", "Preço de venda"), Map.entry("imagem", "Imagem"), Map.entry("item", "Item"),
-			Map.entry("valorUnitario", "Valor unitário"));
+			Map.entry("valorUnitario", "Valor unitário"), Map.entry("confirmada", "Confirmada"),
+			Map.entry("vencimento", "Vencimento"), Map.entry("foto", "Foto da conta"),
+			Map.entry("comprovante", "Comprovante"), Map.entry("pagaEm", "Paga em"), Map.entry("compra", "Compra"),
+			Map.entry("parcela", "Parcela"), Map.entry("parcelas", "Parcelas"), Map.entry("valorParcela", "Valor da parcela"),
+			Map.entry("colaborador", "Colaborador"), Map.entry("competencia", "Mês"), Map.entry("pagoEm", "Pago em"),
+			Map.entry("origem", "Origem"), Map.entry("realizado", "Realizado"), Map.entry("referenciaId", "Referência"),
+			Map.entry("aluguelDesde", "Aluguel desde"));
 
 	private static final DateTimeFormatter DATA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 	private static final DateTimeFormatter DATA_HORA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");

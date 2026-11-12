@@ -5,6 +5,7 @@ import { dataPorExtenso, hojeIso } from './core/datas';
 import { Logo } from './componentes/logo';
 import { EstadoAtualizacao, agendaApp } from './core/aplicativo';
 import { Colaboradores } from './core/colaboradores';
+import { AvisosDoMenu } from './core/pendencias';
 import { ModalCodigo } from './componentes/modal-codigo';
 import { ModalMeuCodigo } from './componentes/modal-meu-codigo';
 
@@ -21,6 +22,7 @@ export class App {
   protected readonly menuAberto = signal(false);
   protected readonly noAplicativo = agendaApp() !== null;
   protected readonly trocandoCodigo = signal(false);
+  protected readonly avisos = inject(AvisosDoMenu).pendencias;
 
   /** As telas aparecem com login (em casa) ou sempre (no computador do estúdio, depois da primeira conta). */
   protected readonly mostrarTelas = computed(() => {

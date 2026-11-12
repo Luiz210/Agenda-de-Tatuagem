@@ -6,7 +6,7 @@ const sessao = (extra: Partial<SessaoAgenda> = {}): SessaoAgenda => ({
   observacao: null, tatuagemId: 1, descricao: 'Fechamento de braço', localCorpo: 'Braço direito',
   valorTotal: 2400, clienteId: 1, clienteNome: 'Ana Souza', clienteTelefone: '16991234567',
   numero: 1, totalSessoes: 3, imagemId: null, responsavelId: 1, responsavelNome: 'Rafa',
-  valoresVisiveis: true, sinal: null, ...extra,
+  valoresVisiveis: true, sinal: null, confirmada: false, ...extra,
 });
 
 describe('formatos', () => {

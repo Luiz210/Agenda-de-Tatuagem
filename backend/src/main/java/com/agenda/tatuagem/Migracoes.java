@@ -40,6 +40,10 @@ class Migracoes implements ApplicationRunner {
 				+ " AND CRIADO_POR IN (SELECT ID FROM USUARIO)");
 		executar("UPDATE SESSAO_TATUAGEM S SET RESPONSAVEL_ID = (SELECT T.RESPONSAVEL_ID FROM TATUAGEM T"
 				+ " WHERE T.ID = S.TATUAGEM_ID) WHERE S.RESPONSAVEL_ID IS NULL");
+
+		// Quem já tinha aluguel antes do financeiro passa a ser cobrado a partir deste mês.
+		executar("UPDATE USUARIO SET ALUGUEL_DESDE = DATEADD('DAY', 1 - DAY(CURRENT_DATE), CURRENT_DATE)"
+				+ " WHERE VALOR_ALUGUEL IS NOT NULL AND ALUGUEL_DESDE IS NULL");
 	}
 
 	private void executar(String sql) {

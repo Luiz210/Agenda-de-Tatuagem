@@ -1,6 +1,7 @@
 package com.agenda.tatuagem.autenticacao;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import org.hibernate.annotations.ColumnDefault;
 
@@ -64,6 +65,10 @@ public class Usuario {
 	/** Dia do mês em que o aluguel vence. */
 	@Column(name = "DIA_PAGAMENTO_ALUGUEL")
 	private Integer diaPagamentoAluguel;
+
+	/** Primeiro mês em que o aluguel é cobrado. Antes dele não há atraso. */
+	@Column(name = "ALUGUEL_DESDE")
+	private LocalDate aluguelDesde;
 
 	@Column(name = "PIN_HASH", length = 200)
 	private String pinHash;

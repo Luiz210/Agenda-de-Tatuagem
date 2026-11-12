@@ -22,6 +22,9 @@
       </span>
       <span class="meta">
         <span class="etiqueta" [class]="'etiqueta ' + sessao().status.toLowerCase()">{{ status() }}</span>
+        @if (sessao().status === 'AGENDADA' && sessao().confirmada) {
+          <span class="etiqueta realizada">Confirmada</span>
+        }
         @if (sessao().totalSessoes > 1) {
           <span>Sessão {{ sessao().numero }} de {{ sessao().totalSessoes }}</span>
         }
@@ -39,10 +42,16 @@
       <span class="valor">{{ valorOuTraco(sessao().valor) }}</span>
     }
   </button>
-  @if (whatsapp(); as link) {
-    <a class="botao-whats" [href]="link" target="_blank" rel="noopener">
-      <app-icone-whatsapp />
-      Confirmar
-    </a>
+  @if (sessao().status === 'AGENDADA' && !sessao().confirmada) {
+    <div class="confirmacao">
+      @if (whatsapp(); as link) {
+        <a class="botao-whats" [href]="link" target="_blank" rel="noopener">
+          <app-icone-whatsapp />
+          Confirmar
+        </a>
+      }
+      <button type="button" class="botao secundario" [disabled]="ocupado()" title="O cliente confirmou que vem"
+        (click)="confirmar(true)">✓ Confirmou</button>
+    </div>
   }
 </article>

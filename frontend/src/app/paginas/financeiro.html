@@ -1,0 +1,274 @@
+<header class="cabecalho">
+  <div>
+    <h1 class="titulo-pagina">Financeiro</h1>
+    <p class="sub-pagina">O caixa do estúdio. O valor das tatuagens é de cada tatuador e não entra aqui.</p>
+  </div>
+</header>
+
+@if (erro()) {
+  <p class="aviso-erro" role="alert">{{ erro() }}</p>
+}
+
+@if (!podeVer()) {
+  <p class="aviso-info">
+    O financeiro é só para administradores.
+    @if (autenticacao.estudio()) {
+      <button type="button" class="link-acao" (click)="identificar()">Digitar código de administrador</button>
+    }
+  </p>
+} @else {
+  <nav class="abas" aria-label="Partes do financeiro">
+    <button type="button" [class.ativa]="aba() === 'resumo'" (click)="aba.set('resumo')">Resumo</button>
+    <button type="button" [class.ativa]="aba() === 'contas'" (click)="aba.set('contas')">Contas a pagar</button>
+    <button type="button" [class.ativa]="aba() === 'compras'" (click)="aba.set('compras')">Compras</button>
+    <button type="button" [class.ativa]="aba() === 'alugueis'" (click)="aba.set('alugueis')">Aluguéis</button>
+    <button type="button" [class.ativa]="aba() === 'entradas'" (click)="aba.set('entradas')">Entradas e saídas</button>
+  </nav>
+
+  @if (aba() === 'contas' || aba() === 'alugueis' || aba() === 'entradas') {
+    <div class="mes">
+      <button type="button" class="botao secundario" aria-label="Mês anterior" (click)="mudarMes(-1)">‹</button>
+      <strong>{{ nomeDoMes() }}</strong>
+      <button type="button" class="botao secundario" aria-label="Próximo mês" (click)="mudarMes(1)">›</button>
+    </div>
+  }
+
+  @switch (aba()) {
+    @case ('resumo') {
+      @if (resumo(); as r) {
+        <div class="numeros">
+          <div class="saldo" [class.negativo]="r.saldo < 0"><span>Saldo em caixa</span><strong>{{ valorOuTraco(r.saldo) }}</strong></div>
+          <div><span>Entrou no mês</span><strong class="entrada">{{ valorOuTraco(r.entradasDoMes) }}</strong></div>
+          <div><span>Saiu no mês</span><strong class="saida">{{ valorOuTraco(r.saidasDoMes) }}</strong></div>
+          <div><span>A receber</span><strong>{{ valorOuTraco(r.aReceber) }}</strong></div>
+          <div><span>A pagar até o fim do mês</span><strong>{{ valorOuTraco(r.aPagar) }}</strong></div>
+        </div>
+
+        <div class="colunas">
+          <section>
+            <h2>Próximas contas</h2>
+            <ul class="lista">
+              @for (c of r.proximasContas; track c.id) {
+                <li>
+                  <button type="button" class="linha" [class.vencida]="c.situacao === 'VENCIDA'" (click)="editandoConta.set(c)">
+                    <span class="data">{{ dataCurta(c.vencimento) }}</span>
+                    <span class="nome">{{ c.nome }}</span>
+                    @if (c.situacao === 'VENCIDA') {
+                      <span class="etiqueta alerta">Vencida</span>
+                    }
+                    <strong>{{ valorOuTraco(c.valor) }}</strong>
+                  </button>
+                </li>
+              } @empty {
+                <li class="vazio-texto">Nenhuma conta a pagar.</li>
+              }
+            </ul>
+          </section>
+          <section>
+            <h2>Aluguéis atrasados</h2>
+            <ul class="lista">
+              @for (a of r.alugueisAtrasados; track a.colaboradorId) {
+                <li class="linha estatica vencida">
+                  <span class="nome">{{ a.colaboradorNome }} <small>{{ mesesEmTexto(a.meses) }}</small></span>
+                  <strong>{{ valorOuTraco(a.total) }}</strong>
+                </li>
+              } @empty {
+                <li class="vazio-texto">Ninguém em atraso.</li>
+              }
+            </ul>
+            <h2>Últimos lançamentos</h2>
+            <ul class="lista">
+              @for (l of r.ultimosLancamentos; track l.id) {
+                <li class="linha estatica">
+                  <span class="data">{{ dataCurta(l.data) }}</span>
+                  <span class="nome">{{ l.descricao }}</span>
+                  <strong [class]="l.tipo === 'ENTRADA' ? 'entrada' : 'saida'">
+                    {{ l.tipo === 'ENTRADA' ? '+' : '−' }}{{ valorOuTraco(l.valor) }}
+                  </strong>
+                </li>
+              } @empty {
+                <li class="vazio-texto">Nada lançado ainda. O saldo começa em zero.</li>
+              }
+            </ul>
+          </section>
+        </div>
+      }
+    }
+
+    @case ('contas') {
+      <div class="barra">
+        <p>{{ valorOuTraco(totalPagoDoMes()) }} pagos de {{ valorOuTraco(totalContasDoMes()) }}</p>
+        <button type="button" class="botao" (click)="editandoConta.set('nova')">+ Nova conta</button>
+      </div>
+      <ul class="lista">
+        @for (c of contas(); track c.id) {
+          <li>
+            <button type="button" class="linha" [class.vencida]="c.situacao === 'VENCIDA'" [class.paga]="c.situacao === 'PAGA'"
+              (click)="editandoConta.set(c)">
+              <span class="data">{{ dataCurta(c.vencimento) }}</span>
+              <span class="nome">
+                {{ c.nome }}
+                @if (c.observacao) {
+                  <small>{{ c.observacao }}</small>
+                }
+              </span>
+              @switch (c.situacao) {
+                @case ('PAGA') {
+                  <span class="etiqueta realizada">Paga {{ dataCurta(c.pagaEm!) }}</span>
+                }
+                @case ('VENCIDA') {
+                  <span class="etiqueta alerta">Vencida</span>
+                }
+                @default {
+                  <span class="etiqueta neutra">A pagar</span>
+                }
+              }
+              <strong>{{ valorOuTraco(c.valor) }}</strong>
+            </button>
+          </li>
+        } @empty {
+          <li class="vazio-texto">Nenhuma conta neste mês.</li>
+        }
+      </ul>
+    }
+
+    @case ('compras') {
+      <div class="barra">
+        <p>Cada parcela aparece em Contas a pagar, no mês dela.</p>
+        <button type="button" class="botao" (click)="editandoCompra.set('nova')">+ Nova compra</button>
+      </div>
+      <ul class="lista">
+        @for (c of compras(); track c.id) {
+          <li>
+            <button type="button" class="linha" [class.paga]="c.parcelasPagas === c.parcelas" (click)="editandoCompra.set(c.id)">
+              <span class="data">{{ dataCurta(c.vencimento) }}</span>
+              <span class="nome">
+                {{ c.nome }}
+                <small>
+                  {{ c.parcelas }}× de {{ valorOuTraco(c.valorParcela) }} · {{ c.parcelasPagas }}/{{ c.parcelas }} pagas
+                  @if (c.proximoVencimento) {
+                    · próxima {{ dataCurta(c.proximoVencimento) }}
+                  }
+                </small>
+              </span>
+              <strong>{{ valorOuTraco(c.valorTotal) }}</strong>
+            </button>
+          </li>
+        } @empty {
+          <li class="vazio-texto">Nenhuma compra cadastrada.</li>
+        }
+      </ul>
+    }
+
+    @case ('alugueis') {
+      <div class="barra">
+        <p>{{ valorOuTraco(totalRecebidoAlugueis()) }} recebidos de {{ valorOuTraco(totalAlugueis()) }}</p>
+      </div>
+      <ul class="lista">
+        @for (a of alugueis(); track a.colaboradorId) {
+          <li class="linha estatica" [class.vencida]="a.situacao === 'ATRASADO'" [class.paga]="a.situacao === 'PAGO'">
+            <span class="data">dia {{ a.vencimento.slice(8, 10) }}</span>
+            <span class="nome">{{ a.colaboradorNome }}</span>
+            @switch (a.situacao) {
+              @case ('PAGO') {
+                <span class="etiqueta realizada">Pago {{ dataCurta(a.pagoEm!) }}</span>
+              }
+              @case ('ATRASADO') {
+                <span class="etiqueta alerta">Atrasado</span>
+              }
+              @default {
+                <span class="etiqueta neutra">A vencer</span>
+              }
+            }
+            <strong>{{ valorOuTraco(a.valor) }}</strong>
+            @if (a.situacao === 'PAGO') {
+              <button type="button" class="link-acao" (click)="desfazerAluguel(a)">Desfazer</button>
+            } @else {
+              <button type="button" class="botao secundario" (click)="recebendoAluguel.set(a)">Receber</button>
+            }
+          </li>
+        } @empty {
+          <li class="vazio-texto">Nenhum colaborador com aluguel neste mês. O valor e o dia ficam no cadastro de Colaboradores.</li>
+        }
+      </ul>
+    }
+
+    @case ('entradas') {
+      <div class="barra">
+        <p>Vendas, aluguéis e contas pagas entram sozinhos. Aqui você lança outros ganhos do estúdio.</p>
+        <button type="button" class="botao" (click)="novaEntrada.set(true)">+ Nova entrada</button>
+      </div>
+      @if (novaEntrada()) {
+        <form class="nova-entrada" (submit)="lancarEntrada($event)">
+          <label class="campo">
+            Descrição
+            <input name="descricao" required maxlength="200" placeholder="Ex.: Workshop de fine line" />
+          </label>
+          <label class="campo">
+            Valor (R$)
+            <input name="valor" inputmode="decimal" required placeholder="0,00" />
+          </label>
+          <label class="campo">
+            Data
+            <input name="data" type="date" required [value]="hoje" />
+          </label>
+          <label class="opcao">
+            <input type="checkbox" name="recebido" checked />
+            <span>Já recebido (desmarque se ainda vai receber)</span>
+          </label>
+          <div class="acoes">
+            <button class="botao">Lançar</button>
+            <button type="button" class="link-acao" (click)="novaEntrada.set(false)">Cancelar</button>
+          </div>
+        </form>
+      }
+
+      @if (aReceber().length) {
+        <h2>A receber</h2>
+        <ul class="lista">
+          @for (l of aReceber(); track l.id) {
+            <li class="linha estatica">
+              <span class="data">{{ dataCurta(l.data) }}</span>
+              <span class="nome">{{ l.descricao }}</span>
+              <strong>{{ valorOuTraco(l.valor) }}</strong>
+              <button type="button" class="botao secundario" (click)="receberEntrada(l)">Recebido</button>
+              <button type="button" class="link-acao" (click)="removerEntrada(l)">Excluir</button>
+            </li>
+          }
+        </ul>
+      }
+
+      <h2>Movimento de {{ nomeDoMes() }}</h2>
+      <ul class="lista">
+        @for (l of lancamentos(); track l.id) {
+          <li class="linha estatica" [class.prevista]="!l.realizado">
+            <span class="data">{{ dataCurta(l.data) }}</span>
+            <span class="nome">
+              {{ l.descricao }}
+              <small>{{ origens[l.origem] }}{{ l.realizado ? '' : ' · a receber' }}</small>
+            </span>
+            <strong [class]="l.tipo === 'ENTRADA' ? 'entrada' : 'saida'">
+              {{ l.tipo === 'ENTRADA' ? '+' : '−' }}{{ valorOuTraco(l.valor) }}
+            </strong>
+            @if (l.origem === 'AVULSO') {
+              <button type="button" class="link-acao" (click)="removerEntrada(l)">Excluir</button>
+            }
+          </li>
+        } @empty {
+          <li class="vazio-texto">Nada neste mês.</li>
+        }
+      </ul>
+    }
+  }
+}
+
+@if (editandoConta(); as c) {
+  <app-modal-conta [conta]="c === 'nova' ? null : c" (abrirCompra)="abrirCompra($event)" (fechar)="editandoConta.set(null)" />
+}
+@if (editandoCompra(); as c) {
+  <app-modal-compra [compraId]="c === 'nova' ? null : c" (fechar)="editandoCompra.set(null)" />
+}
+@if (recebendoAluguel(); as a) {
+  <app-modal-baixa titulo="Receber aluguel" [descricao]="a.colaboradorNome + ' · ' + nomeDoMes()" [valor]="a.valor"
+    [registrar]="receberAluguel" (fechar)="recebendoAluguel.set(null)" />
+}

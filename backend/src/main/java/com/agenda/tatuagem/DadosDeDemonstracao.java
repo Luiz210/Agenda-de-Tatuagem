@@ -44,6 +44,18 @@ import com.agenda.tatuagem.estoque.Categoria;
 import com.agenda.tatuagem.estoque.ItemEstoque;
 import com.agenda.tatuagem.estoque.Movimento;
 import com.agenda.tatuagem.estoque.TipoMovimento;
+import com.agenda.tatuagem.financeiro.AlugueisService;
+import com.agenda.tatuagem.financeiro.CaixaService;
+import com.agenda.tatuagem.financeiro.ContasService;
+import com.agenda.tatuagem.financeiro.FinanceiroDTOs.AluguelDados;
+import com.agenda.tatuagem.financeiro.FinanceiroDTOs.Baixa;
+import com.agenda.tatuagem.financeiro.FinanceiroDTOs.CompraDados;
+import com.agenda.tatuagem.financeiro.FinanceiroDTOs.CompraDetalhe;
+import com.agenda.tatuagem.financeiro.FinanceiroDTOs.ContaDados;
+import com.agenda.tatuagem.financeiro.FinanceiroDTOs.ContaResumo;
+import com.agenda.tatuagem.financeiro.FinanceiroDTOs.EntradaDados;
+import com.agenda.tatuagem.financeiro.OrigemLancamento;
+import com.agenda.tatuagem.financeiro.TipoLancamento;
 
 import jakarta.persistence.EntityManager;
 
@@ -55,9 +67,11 @@ import jakarta.persistence.EntityManager;
  * </pre>
  *
  * Não apaga nada: acrescenta colaboradores, clientes, tatuagens, sessões,
- * pagamentos, imagens, contatos, materiais, produtos e vendas, com datas em
- * volta do dia de hoje. Roda uma vez só, por partes: a agenda, se os colaboradores de exemplo não existirem, e o
- * estoque, se ainda não houver nenhum item.
+ * pagamentos, imagens, contatos, materiais, produtos, vendas e o financeiro
+ * (aluguéis, contas, compras parceladas e entradas), com datas em volta do dia
+ * de hoje. Roda uma vez só, por partes: a agenda, se os colaboradores de exemplo
+ * não existirem; o estoque, se não houver nenhum item; e o financeiro, se não
+ * houver nenhuma conta nem lançamento.
  */
 @Component
 @Profile("demo")
@@ -70,11 +84,18 @@ class DadosDeDemonstracao implements ApplicationRunner {
 
 	private final EntityManager em;
 	private final TransactionTemplate transacao;
+	private final ContasService contas;
+	private final AlugueisService alugueis;
+	private final CaixaService caixa;
 	private final LocalDate hoje = LocalDate.now();
 
-	DadosDeDemonstracao(EntityManager em, TransactionTemplate transacao) {
+	DadosDeDemonstracao(EntityManager em, TransactionTemplate transacao, ContasService contas,
+			AlugueisService alugueis, CaixaService caixa) {
 		this.em = em;
 		this.transacao = transacao;
+		this.contas = contas;
+		this.alugueis = alugueis;
+		this.caixa = caixa;
 	}
 
 	/** Cada parte só é carregada uma vez: as que já existem ficam como estão. */
@@ -94,6 +115,14 @@ class DadosDeDemonstracao implements ApplicationRunner {
 			if (itens == null || itens == 0) {
 				transacao.executeWithoutResult(s -> carregarEstoque());
 				LOG.info("Estoque e produtos de demonstração carregados.");
+			}
+			Long financeiro = transacao.execute(s -> em
+					.createQuery("select count(c) from ContaPagar c", Long.class)
+					.getSingleResult()
+					+ em.createQuery("select count(l) from Lancamento l", Long.class).getSingleResult());
+			if (financeiro == null || financeiro == 0) {
+				transacao.executeWithoutResult(s -> carregarFinanceiro());
+				LOG.info("Financeiro de demonstração carregado.");
 			}
 		} finally {
 			UsuarioAtual.limpar();
@@ -141,7 +170,8 @@ class DadosDeDemonstracao implements ApplicationRunner {
 		Tatuagem braco = tatuagem(ana, admin, "Fechamento de braço com rosas e ornamentos", "Braço", "2400");
 		sessao(braco, admin, hoje.minusDays(20), "10:00", 300, "800", StatusSessao.REALIZADA, "Contorno completo.");
 		sessao(braco, admin, hoje.minusDays(6), "14:00", 240, "800", StatusSessao.CANCELADA, "Cliente gripada.");
-		sessao(braco, admin, hoje, "10:00", 300, "800", StatusSessao.AGENDADA, "Sombreamento.");
+		// Já confirmada pelo WhatsApp; as outras dos próximos dias aparecem no aviso da Agenda.
+		sessao(braco, admin, hoje, "10:00", 300, "800", StatusSessao.AGENDADA, "Sombreamento.").setConfirmada(true);
 		sessao(braco, admin, hoje.plusDays(21), "10:00", 240, "800", StatusSessao.AGENDADA, null);
 		pagamento(braco, hoje.minusDays(30), "300", "Pix", "Sinal", true, true);
 		pagamento(braco, hoje.minusDays(20), "800", "Cartão de crédito", "1ª sessão", false, true);
@@ -316,6 +346,100 @@ class DadosDeDemonstracao implements ApplicationRunner {
 				: i.getQuantidade() - quantidade);
 	}
 
+	// ---------- Financeiro ----------
+
+	/**
+	 * Usa os serviços do próprio aplicativo, para as parcelas, os pagamentos e os
+	 * lançamentos no caixa saírem exatamente como sairiam pela tela.
+	 */
+	private void carregarFinanceiro() {
+		Usuario admin = administrador();
+		agir(admin);
+		LocalDate mes = hoje.withDayOfMonth(1);
+
+		// As vendas de demonstração entram no caixa, como entrariam pela tela de produtos.
+		em.createQuery("select m from Movimento m join fetch m.item where m.tipo = :venda", Movimento.class)
+				.setParameter("venda", TipoMovimento.VENDA)
+				.getResultList()
+				.forEach(m -> caixa.registrar(TipoLancamento.ENTRADA, OrigemLancamento.VENDA,
+						"Venda: " + m.getQuantidade() + "× " + m.getItem().getNome(), m.getValorTotal(),
+						m.getData().toLocalDate(), true, m.getId()));
+
+		// Aluguel cobrado há 3 meses: Rafa em dia, Bia devendo o mês passado e este, Duda ainda no prazo.
+		Usuario rafa = porUsuario(MARCA, null);
+		Usuario bia = porUsuario("demo.bia", null);
+		Usuario duda = porUsuario("demo.duda", null);
+		LocalDate inicio = mes.minusMonths(3);
+		for (Usuario u : new Usuario[] { rafa, bia, duda }) {
+			if (u != null) {
+				u.setAluguelDesde(inicio);
+			}
+		}
+		em.flush();
+		if (rafa != null) {
+			for (int i = 3; i >= 0; i--) {
+				aluguel(rafa, mes.minusMonths(i), 4, "Pix");
+			}
+		}
+		if (bia != null) {
+			aluguel(bia, mes.minusMonths(3), 9, "Dinheiro");
+			aluguel(bia, mes.minusMonths(2), 12, "Pix");
+		}
+		if (duda != null) {
+			for (int i = 3; i >= 1; i--) {
+				aluguel(duda, mes.minusMonths(i), 14, "Pix");
+			}
+		}
+
+		// Contas: uma vencida, uma paga com comprovante, uma no prazo e as do mês passado já pagas.
+		ContaResumo luz = contas.criarConta(new ContaDados("Conta de luz", new BigDecimal("387.45"),
+				hoje.minusDays(3), "Bandeira vermelha este mês"));
+		contas.trocarFoto(luz.id(), "conta-luz.png", "image/png", desenhar(new Color(200, 150, 20), "LUZ"));
+		ContaResumo agua = contas.criarConta(new ContaDados("Conta de água", new BigDecimal("96.30"),
+				mes.plusDays(4), null));
+		contas.pagar(agua.id(), new Baixa(mes.plusDays(2), "Pix"), "comprovante-agua.png", "image/png",
+				desenhar(new Color(40, 110, 180), "PAGO"));
+		contas.criarConta(new ContaDados("Internet", new BigDecimal("119.90"), hoje.plusDays(5), null));
+		ContaResumo ponto = contas.criarConta(new ContaDados("Aluguel do ponto", new BigDecimal("3200.00"),
+				mes.plusMonths(1).minusDays(1), "Imobiliária Centro"));
+		contas.trocarFoto(ponto.id(), "boleto-ponto.png", "image/png", desenhar(new Color(60, 60, 60), "BOLETO"));
+		ContaResumo pontoAnterior = contas.criarConta(new ContaDados("Aluguel do ponto", new BigDecimal("3200.00"),
+				mes.minusDays(1), "Imobiliária Centro"));
+		contas.pagar(pontoAnterior.id(), new Baixa(mes.minusDays(2), "Transferência"), null, null, null);
+		ContaResumo luzAnterior = contas.criarConta(new ContaDados("Conta de luz", new BigDecimal("352.10"),
+				mes.minusMonths(1).plusDays(19), null));
+		contas.pagar(luzAnterior.id(), new Baixa(mes.minusMonths(1).plusDays(18), "Pix"), null, null, null);
+
+		// Compras: uma em 6 vezes com 2 parcelas pagas, outra em 3 com a 2ª adiantada.
+		CompraDetalhe maca = contas.criarCompra(new CompraDados("Maca hidráulica", new BigDecimal("2400.00"),
+				mes.minusMonths(2).plusDays(14), 6, "Loja Estética Pro"));
+		contas.trocarComprovanteDaCompra(maca.compra().id(), "nota-maca.png", "image/png",
+				desenhar(new Color(120, 30, 40), "NOTA"));
+		contas.pagar(maca.parcelas().get(0).id(), new Baixa(mes.minusMonths(2).plusDays(13), "Cartão de crédito"),
+				null, null, null);
+		contas.pagar(maca.parcelas().get(1).id(), new Baixa(mes.minusMonths(1).plusDays(14), "Cartão de crédito"),
+				null, null, null);
+		CompraDetalhe autoclave = contas.criarCompra(new CompraDados("Autoclave 21 L", new BigDecimal("1899.90"),
+				mes.plusDays(9), 3, null));
+		contas.pagar(autoclave.parcelas().get(0).id(), new Baixa(mes.plusDays(1), "Pix"), null, null, null);
+		contas.pagar(autoclave.parcelas().get(1).id(), new Baixa(mes.plusDays(1), "Pix"), null, null, null);
+
+		// Entradas avulsas: uma recebida, uma ainda a receber.
+		caixa.lancarEntrada(new EntradaDados("Workshop de fine line", new BigDecimal("1200.00"),
+				hoje.minusDays(15), true));
+		caixa.lancarEntrada(new EntradaDados("Flash day: parte do evento", new BigDecimal("800.00"),
+				hoje.plusDays(10), false));
+		em.flush();
+	}
+
+	private void aluguel(Usuario u, LocalDate competencia, int diaDoPagamento, String forma) {
+		LocalDate dia = competencia.withDayOfMonth(Math.min(diaDoPagamento, competencia.lengthOfMonth()));
+		if (dia.isAfter(hoje)) {
+			dia = hoje;
+		}
+		alugueis.receber(new AluguelDados(u.getId(), competencia, dia, forma, null));
+	}
+
 	// ---------- Apoio ----------
 
 	/** Quem aparece no histórico como autor das próximas alterações. */
@@ -386,8 +510,8 @@ class DadosDeDemonstracao implements ApplicationRunner {
 		return t;
 	}
 
-	private void sessao(Tatuagem t, Usuario responsavel, LocalDate data, String hora, int minutos, String valor,
-			StatusSessao status, String observacao) {
+	private SessaoTatuagem sessao(Tatuagem t, Usuario responsavel, LocalDate data, String hora, int minutos,
+			String valor, StatusSessao status, String observacao) {
 		SessaoTatuagem s = new SessaoTatuagem();
 		s.setTatuagem(t);
 		s.setResponsavel(responsavel);
@@ -398,6 +522,7 @@ class DadosDeDemonstracao implements ApplicationRunner {
 		s.setStatus(status);
 		s.setObservacao(observacao);
 		em.persist(s);
+		return s;
 	}
 
 	private void pagamento(Tatuagem t, LocalDate data, String valor, String forma, String observacao, boolean sinal,

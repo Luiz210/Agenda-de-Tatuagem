@@ -45,6 +45,9 @@ public class AgendaService {
 	/** Depois de quanto tempo sem tatuar (e sem ser procurado) o cliente volta a ser destacado. */
 	static final int MESES_PARA_RECONTATO = 6;
 
+	/** Quantos dias à frente as sessões entram no aviso de "confirmar com o cliente". */
+	static final int DIAS_PARA_CONFIRMAR = 2;
+
 	private static final String NAO_CANCELADA = " s.status <> com.agenda.tatuagem.agenda.StatusSessao.CANCELADA ";
 
 	private final EntityManager em;
@@ -314,6 +317,31 @@ public class AgendaService {
 		return detalhe(s, visiveis);
 	}
 
+	/** O cliente respondeu que vem (ou a confirmação foi desfeita). */
+	public SessaoDetalhe confirmarSessao(Long id, boolean confirmada) {
+		UsuarioAtual.exigirIdentificado();
+		SessaoTatuagem s = buscar(SessaoTatuagem.class, id, "Sessão");
+		s.setConfirmada(confirmada);
+		return detalhe(s, valoresVisiveis(s.getTatuagem()));
+	}
+
+	/** Sessões agendadas de hoje até {@value #DIAS_PARA_CONFIRMAR} dias à frente que ninguém confirmou. */
+	@Transactional(readOnly = true)
+	public long sessoesSemConfirmacao() {
+		LocalDate hoje = LocalDate.now();
+		return em.createQuery("select count(s) from SessaoTatuagem s where s.confirmada = false"
+				+ " and s.status = com.agenda.tatuagem.agenda.StatusSessao.AGENDADA"
+				+ " and s.data between :hoje and :limite", Long.class)
+				.setParameter("hoje", hoje)
+				.setParameter("limite", hoje.plusDays(DIAS_PARA_CONFIRMAR))
+				.getSingleResult();
+	}
+
+	@Transactional(readOnly = true)
+	public long clientesParaContatar() {
+		return clientes().stream().filter(ClienteResumo::paraContatar).count();
+	}
+
 	public void removerSessao(Long id) {
 		UsuarioAtual.exigirIdentificado();
 		em.remove(buscar(SessaoTatuagem.class, id, "Sessão"));
@@ -445,7 +473,7 @@ public class AgendaService {
 					visiveis ? s.getValor() : null, s.getStatus(), s.getObservacao(), t.getId(), t.getDescricao(),
 					t.getLocalCorpo(), visiveis ? t.getValorTotal() : null, c.getId(), c.getNome(), c.getTelefone(),
 					daTatuagem.indexOf(s.getId()) + 1, daTatuagem.size(), capas.get(t.getId()),
-					r != null ? r.getId() : null, r != null ? r.getNome() : null, visiveis, sinal);
+					r != null ? r.getId() : null, r != null ? r.getNome() : null, visiveis, sinal, s.isConfirmada());
 		}).toList();
 	}
 
@@ -453,7 +481,7 @@ public class AgendaService {
 		Usuario r = s.getResponsavel();
 		return new SessaoDetalhe(s.getId(), r != null ? r.getId() : null, r != null ? r.getNome() : null,
 				s.getData(), s.getHora(), s.getDuracaoMinutos(), visiveis ? s.getValor() : null, s.getStatus(),
-				s.getObservacao());
+				s.getObservacao(), s.isConfirmada());
 	}
 
 	private static PagamentoDetalhe detalhe(Pagamento p) {
@@ -524,6 +552,10 @@ public class AgendaService {
 		}
 		if (d.duracaoMinutos() != null && (d.duracaoMinutos() < 0 || d.duracaoMinutos() > 24 * 60)) {
 			throw RegraException.invalido("A duração precisa ficar entre 0 e 24 horas.");
+		}
+		// Remarcou: a confirmação era para o horário antigo.
+		if (s.isConfirmada() && (!d.data().equals(s.getData()) || !d.hora().equals(s.getHora()))) {
+			s.setConfirmada(false);
 		}
 		s.setData(d.data());
 		s.setHora(d.hora());

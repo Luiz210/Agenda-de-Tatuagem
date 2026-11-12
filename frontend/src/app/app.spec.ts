@@ -49,6 +49,7 @@ describe('App', () => {
   it('no computador do estúdio abre sem login e oferece a identificação', async () => {
     const tela = await criar({ estudio: true, temContas: true });
     expect(links(tela)).toContain('Histórico');
+    expect(links(tela)).toContain('Financeiro');
     expect(tela.querySelector('.topo')?.textContent).toContain('Identificar-se');
   });
 });

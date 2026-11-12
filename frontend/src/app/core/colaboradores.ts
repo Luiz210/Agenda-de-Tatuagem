@@ -73,6 +73,10 @@ export const ENTIDADES: Record<string, string> = {
   ItemEstoque: 'Item de estoque',
   Movimento: 'Movimento de estoque',
   Arquivo: 'Arquivo',
+  ContaPagar: 'Conta a pagar',
+  Compra: 'Compra',
+  PagamentoAluguel: 'Aluguel',
+  Lancamento: 'Lançamento do caixa',
 };
 
 @Injectable({ providedIn: 'root' })

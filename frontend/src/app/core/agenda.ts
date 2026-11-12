@@ -41,6 +41,8 @@ export interface Sessao {
   valor: number | null;
   status: StatusSessao;
   observacao: string | null;
+  /** O cliente confirmou que vem. Volta a falso se o dia ou o horário mudar. */
+  confirmada: boolean;
 }
 
 export interface SessaoDados {
@@ -195,6 +197,9 @@ export class Agenda {
   }
   alterarSessao(id: number, dados: SessaoDados) {
     return this.mudar(this.http.put<Sessao>(`/api/sessoes/${id}`, dados));
+  }
+  confirmarSessao(id: number, confirmada: boolean) {
+    return this.mudar(this.http.put<Sessao>(`/api/sessoes/${id}/confirmacao`, { confirmada }));
   }
   removerSessao(id: number) {
     return this.mudar(this.http.delete<void>(`/api/sessoes/${id}`));

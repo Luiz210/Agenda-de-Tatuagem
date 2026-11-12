@@ -20,6 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.agenda.tatuagem.agenda.AgendaDTOs.ClienteDados;
 import com.agenda.tatuagem.agenda.AgendaDTOs.ClienteResumo;
+import com.agenda.tatuagem.agenda.AgendaDTOs.Confirmacao;
 import com.agenda.tatuagem.agenda.AgendaDTOs.ContatoDados;
 import com.agenda.tatuagem.agenda.AgendaDTOs.ContatoDetalhe;
 import com.agenda.tatuagem.agenda.AgendaDTOs.Ficha;
@@ -123,6 +124,11 @@ public class AgendaController {
 	@PutMapping("sessoes/{id}")
 	public SessaoDetalhe alterarSessao(@PathVariable Long id, @RequestBody SessaoDados dados) {
 		return agenda.alterarSessao(id, dados);
+	}
+
+	@PutMapping("sessoes/{id}/confirmacao")
+	public SessaoDetalhe confirmarSessao(@PathVariable Long id, @RequestBody Confirmacao dados) {
+		return agenda.confirmarSessao(id, !Boolean.FALSE.equals(dados.confirmada()));
 	}
 
 	@DeleteMapping("sessoes/{id}")

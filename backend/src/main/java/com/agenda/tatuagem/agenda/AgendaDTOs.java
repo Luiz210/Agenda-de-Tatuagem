@@ -56,7 +56,7 @@ public final class AgendaDTOs {
 	}
 
 	public record SessaoDetalhe(Long id, Long responsavelId, String responsavelNome, LocalDate data, LocalTime hora,
-			Integer duracaoMinutos, BigDecimal valor, StatusSessao status, String observacao) {
+			Integer duracaoMinutos, BigDecimal valor, StatusSessao status, String observacao, boolean confirmada) {
 	}
 
 	/** Uma linha da agenda, com o que a tela precisa da tatuagem e do cliente. */
@@ -64,7 +64,17 @@ public final class AgendaDTOs {
 			StatusSessao status, String observacao, Long tatuagemId, String descricao, String localCorpo,
 			BigDecimal valorTotal, Long clienteId, String clienteNome, String clienteTelefone, int numero,
 			int totalSessoes, Long imagemId, Long responsavelId, String responsavelNome, boolean valoresVisiveis,
-			SinalResumo sinal) {
+			SinalResumo sinal, boolean confirmada) {
+	}
+
+	public record Confirmacao(Boolean confirmada) {
+	}
+
+	/**
+	 * O que está esperando alguém, para os avisos do menu: sessões dos próximos
+	 * dias sem confirmação, clientes para contatar e itens no limiar de compra.
+	 */
+	public record Pendencias(long agenda, long clientes, long estoque, long produtos) {
 	}
 
 	/** Situação do sinal da tatuagem, para a agenda avisar quando ele ainda não foi pago. */

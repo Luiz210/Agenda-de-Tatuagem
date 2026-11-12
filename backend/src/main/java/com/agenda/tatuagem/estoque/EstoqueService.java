@@ -19,6 +19,9 @@ import com.agenda.tatuagem.estoque.EstoqueDTOs.ItemDados;
 import com.agenda.tatuagem.estoque.EstoqueDTOs.ItemResumo;
 import com.agenda.tatuagem.estoque.EstoqueDTOs.MovimentoDados;
 import com.agenda.tatuagem.estoque.EstoqueDTOs.MovimentoDetalhe;
+import com.agenda.tatuagem.financeiro.CaixaService;
+import com.agenda.tatuagem.financeiro.OrigemLancamento;
+import com.agenda.tatuagem.financeiro.TipoLancamento;
 
 import jakarta.persistence.EntityManager;
 
@@ -32,10 +35,12 @@ public class EstoqueService {
 
 	private final EntityManager em;
 	private final Arquivos arquivos;
+	private final CaixaService caixa;
 
-	EstoqueService(EntityManager em, Arquivos arquivos) {
+	EstoqueService(EntityManager em, Arquivos arquivos, CaixaService caixa) {
 		this.em = em;
 		this.arquivos = arquivos;
+		this.caixa = caixa;
 	}
 
 	// ---------- Itens ----------
@@ -121,6 +126,15 @@ public class EstoqueService {
 		arquivos.remover(antiga);
 	}
 
+	/** Itens que chegaram ao limiar de compra (os da etiqueta "Comprar"). */
+	@Transactional(readOnly = true)
+	public long paraComprar(Categoria categoria) {
+		return em.createQuery("select count(i) from ItemEstoque i where i.ativo = true and i.categoria = :c"
+				+ " and i.limiar is not null and i.quantidade <= i.limiar", Long.class)
+				.setParameter("c", categoria)
+				.getSingleResult();
+	}
+
 	// ---------- Movimentos ----------
 
 	@Transactional(readOnly = true)
@@ -160,8 +174,14 @@ public class EstoqueService {
 				throw RegraException.invalido("Informe o preço da venda.");
 			}
 		}
-		registrar(i, tipo, quantidade, unitario, limitar(dados.forma(), 20, "A forma de pagamento"),
+		Movimento m = registrar(i, tipo, quantidade, unitario, limitar(dados.forma(), 20, "A forma de pagamento"),
 				limitar(dados.observacao(), 200, "A observação"));
+		// A venda entra no caixa do estúdio.
+		if (tipo == TipoMovimento.VENDA) {
+			caixa.registrar(TipoLancamento.ENTRADA, OrigemLancamento.VENDA,
+					"Venda: " + quantidade + "× " + i.getNome(), m.getValorTotal(), m.getData().toLocalDate(), true,
+					m.getId());
+		}
 		return item(itemId);
 	}
 
@@ -180,14 +200,17 @@ public class EstoqueService {
 					"Não dá para desfazer esta entrada: parte dela já saiu do estoque.");
 		}
 		i.setQuantidade(nova);
+		if (m.getTipo() == TipoMovimento.VENDA) {
+			caixa.removerDe(OrigemLancamento.VENDA, m.getId());
+		}
 		em.remove(m);
 		return item(i.getId());
 	}
 
 	// ---------- Apoio ----------
 
-	private void registrar(ItemEstoque i, TipoMovimento tipo, int quantidade, BigDecimal unitario, String forma,
-			String observacao) {
+	private Movimento registrar(ItemEstoque i, TipoMovimento tipo, int quantidade, BigDecimal unitario,
+			String forma, String observacao) {
 		Movimento m = new Movimento();
 		m.setItem(i);
 		m.setTipo(tipo);
@@ -201,6 +224,7 @@ public class EstoqueService {
 		em.persist(m);
 		i.setQuantidade(tipo == TipoMovimento.ENTRADA ? i.getQuantidade() + quantidade
 				: i.getQuantidade() - quantidade);
+		return m;
 	}
 
 	private void preencher(ItemEstoque i, ItemDados d) {

@@ -1,0 +1,114 @@
+<dialog #dialogo class="modal" (close)="fechar.emit()" (click)="fecharPeloFundo($event)">
+  <form class="modal-corpo" (submit)="enviar($event)">
+    <header class="modal-topo">
+      <div>
+        <h2>{{ atual() ? atual()!.nome : 'Nova conta' }}</h2>
+        @if (atual(); as c) {
+          <p>
+            <span [class]="'situacao ' + c.situacao.toLowerCase()">
+              {{ c.situacao === 'PAGA' ? 'Paga' : c.situacao === 'VENCIDA' ? 'Vencida' : 'A pagar' }}
+            </span>
+            · vence {{ dataCurta(c.vencimento) }} · {{ valorOuTraco(c.valor) }}
+          </p>
+        }
+      </div>
+      <button type="button" class="botao secundario fechar" aria-label="Fechar" (click)="dialogo.close()">✕</button>
+    </header>
+
+    @if (erro()) {
+      <p class="aviso-erro" role="alert">{{ erro() }}</p>
+    }
+
+    @if (parcela()) {
+      <p class="aviso-info">
+        Parcela {{ atual()!.parcela }} de {{ atual()!.totalParcelas }} de uma compra. Nome e valor vêm da compra.
+        <button type="button" class="link-acao" (click)="irParaCompra()">Abrir a compra</button>
+      </p>
+    }
+
+    <label class="campo">
+      Nome
+      <input name="nome" required maxlength="150" autocomplete="off" placeholder="Ex.: Conta de luz"
+        [value]="atual()?.nome ?? ''" [disabled]="parcela()" />
+    </label>
+    <div class="linha-campos">
+      <label class="campo">
+        Valor (R$)
+        <input name="valor" inputmode="decimal" required placeholder="0,00" [value]="atual()?.valor ?? ''" [disabled]="parcela()" />
+      </label>
+      <label class="campo">
+        Vencimento
+        <input name="vencimento" type="date" required [value]="atual()?.vencimento ?? hoje" />
+      </label>
+    </div>
+    <label class="campo">
+      <span>Observação <small>(opcional)</small></span>
+      <input name="observacao" maxlength="500" [value]="atual()?.observacao ?? ''" />
+    </label>
+
+    <div class="anexos">
+      <div>
+        <span class="rotulo">Foto da conta</span>
+        @if (atual()?.fotoId; as id) {
+          <button type="button" class="link-acao" (click)="ver(id, 'Foto da conta')">Ver</button>
+        } @else if (novaFoto(); as f) {
+          <span>{{ f.name }}</span>
+        }
+        <label class="link-acao arquivo">
+          <input type="file" accept="image/*,application/pdf" (change)="escolherFoto($event)" />
+          {{ atual()?.fotoId || novaFoto() ? 'Trocar' : 'Anexar' }}
+        </label>
+      </div>
+      @if (atual(); as c) {
+        @if (c.situacao === 'PAGA') {
+          <div>
+            <span class="rotulo">Comprovante</span>
+            @if (c.comprovanteId; as id) {
+              <button type="button" class="link-acao" (click)="ver(id, 'Comprovante')">Ver</button>
+            }
+            <label class="link-acao arquivo">
+              <input type="file" accept="image/*,application/pdf" (change)="anexarComprovante($event)" />
+              {{ c.comprovanteId ? 'Trocar' : 'Anexar' }}
+            </label>
+          </div>
+        }
+      }
+    </div>
+
+    @if (atual(); as c) {
+      <div class="pagamento">
+        @if (c.situacao === 'PAGA') {
+          <p>Paga em {{ dataCurta(c.pagaEm!) }}{{ c.forma ? ' · ' + c.forma : '' }}.</p>
+          <button type="button" class="link-acao" [disabled]="ocupado()" (click)="desfazerPagamento()">Desfazer pagamento</button>
+        } @else {
+          <button type="button" class="botao" (click)="pagando.set(true)">Pagar esta conta</button>
+        }
+      </div>
+    }
+
+    <div class="acoes">
+      <button class="botao" [class.secundario]="atual() && atual()!.situacao !== 'PAGA'" [disabled]="ocupado()">
+        {{ ocupado() ? 'Salvando...' : 'Salvar' }}
+      </button>
+      @if (atual(); as c) {
+        @if (!parcela()) {
+          @if (confirmarExclusao()) {
+            <span>Excluir esta conta{{ c.situacao === 'PAGA' ? ' e a saída dela no caixa' : '' }}?</span>
+            <button type="button" class="botao" [disabled]="ocupado()" (click)="excluir()">Sim, excluir</button>
+            <button type="button" class="link-acao" (click)="confirmarExclusao.set(false)">Não</button>
+          } @else {
+            <button type="button" class="link-acao" (click)="confirmarExclusao.set(true)">Excluir conta</button>
+          }
+        }
+      }
+    </div>
+  </form>
+</dialog>
+
+@if (pagando()) {
+  <app-modal-baixa titulo="Pagar conta" [descricao]="atual()!.nome" [valor]="atual()!.valor" [comComprovante]="true"
+    [registrar]="registrarPagamento" (fechar)="pagando.set(false)" />
+}
+@if (vendo(); as v) {
+  <app-visualizador-arquivo [url]="v.url" [titulo]="v.titulo" (fechar)="vendo.set(null)" />
+}

@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import org.hibernate.annotations.ColumnDefault;
+
 import com.agenda.tatuagem.autenticacao.Usuario;
 
 import jakarta.persistence.Column;
@@ -58,4 +60,9 @@ public class SessaoTatuagem {
 
 	@Column(length = 500)
 	private String observacao;
+
+	/** O cliente confirmou que vem. Volta a falso se o dia ou o horário mudar. */
+	@ColumnDefault("false")
+	@Column(nullable = false)
+	private boolean confirmada;
 }
