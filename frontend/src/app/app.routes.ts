@@ -15,6 +15,7 @@ const NOME = 'Agenda de Tatuagem';
 export const routes: Routes = [
   { path: 'entrar', component: Entrar, title: `Entrar | ${NOME}`, canActivate: [soSemLogin] },
   { path: '', component: Home, title: NOME, canActivate: [exigeLogin] },
+  { path: 'painel', redirectTo: '' },
   { path: 'agenda', component: PaginaAgenda, title: `Agenda | ${NOME}`, canActivate: [exigeLogin] },
   { path: 'clientes', component: Clientes, title: `Clientes | ${NOME}`, canActivate: [exigeLogin] },
   { path: 'clientes/:id', component: FichaCliente, title: `Cliente | ${NOME}`, canActivate: [exigeLogin] },

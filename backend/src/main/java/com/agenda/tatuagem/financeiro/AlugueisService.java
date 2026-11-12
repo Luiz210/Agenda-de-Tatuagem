@@ -111,6 +111,16 @@ public class AlugueisService {
 		return atrasadosAntes.add(desteMes);
 	}
 
+	/** Aluguéis recebidos no período, pela data do recebimento. */
+	@Transactional(readOnly = true)
+	public BigDecimal recebidoEntre(LocalDate inicio, LocalDate fim) {
+		return em.createQuery("select coalesce(sum(p.valor), 0) from PagamentoAluguel p where p.pagoEm between :i and :f",
+				BigDecimal.class)
+				.setParameter("i", inicio)
+				.setParameter("f", fim)
+				.getSingleResult();
+	}
+
 	/** Recebe o aluguel inteiro do mês e lança a entrada no caixa. */
 	public AluguelMes receber(AluguelDados dados) {
 		UsuarioAtual.exigirAdmin();

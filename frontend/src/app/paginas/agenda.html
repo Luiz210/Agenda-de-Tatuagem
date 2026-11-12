@@ -53,6 +53,15 @@
   </aside>
 </div>
 
+<section class="proximos">
+  <h2>Próximos atendimentos</h2>
+  @for (s of proximas(); track s.id) {
+    <app-cartao-sessao [sessao]="s" [mostrarData]="true" [urlImagem]="imagem(s)" (abrir)="aberta.set($event)" />
+  } @empty {
+    <p class="vazio-texto">Nada agendado a partir de amanhã.</p>
+  }
+</section>
+
 @if (agendando()) {
   <app-modal-agendar [data]="dia()" (fechar)="agendando.set(false)" />
 }

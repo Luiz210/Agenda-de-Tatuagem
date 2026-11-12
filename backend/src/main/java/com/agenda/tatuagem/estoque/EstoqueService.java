@@ -252,7 +252,7 @@ public class EstoqueService {
 	 * Abaixo: chegou no limiar. Perto: até um quarto acima dele (pelo menos uma
 	 * unidade), para dar tempo de comprar.
 	 */
-	static Situacao situacao(int quantidade, Integer limiar) {
+	public static Situacao situacao(int quantidade, Integer limiar) {
 		if (limiar == null) {
 			return Situacao.OK;
 		}

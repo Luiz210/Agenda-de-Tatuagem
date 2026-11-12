@@ -1,13 +1,7 @@
-Fase 4: financeiro, e avisos no menu
+Fase 5: indicadores do estúdio na Home
 
-**Financeiro (só administradores)**
-- Caixa do estúdio com saldo começando em zero: entram aluguéis, vendas de produtos e entradas avulsas; saem as contas pagas
-- Contas a pagar por mês, em ordem de vencimento, com vencidas em destaque, foto da conta e baixa com comprovante (foto ou PDF)
-- Compras parceladas: cada parcela vira uma conta no mês dela; o detalhe da compra mostra todas e permite adiantar
-- Aluguel dos colaboradores: mensal, pago de uma vez, atrasado depois do dia combinado
-- Entradas avulsas recebidas ou a receber
-- O valor das tatuagens não entra no caixa: é de cada tatuador
-
-**Avisos no menu**
-- Número ao lado de Agenda (sessões de hoje a 2 dias sem confirmação), Clientes (para contatar), Estoque e Produtos (no limiar de compra)
-- Botão "Confirmou" nas sessões; a confirmação some se a sessão for remarcada
+- "Hoje" agora é a Home, com os atendimentos do dia e os números do estúdio por mês ou por ano
+- Para todos: clientes para chamar de volta, sessões sem confirmação, materiais e produtos no limiar de compra e ranking dos produtos mais vendidos
+- Só para administradores: resultado do estúdio com o lucro líquido, aluguel a receber e colaboradores em atraso, contas e compras do período (total, próximo vencimento e o item mais caro)
+- Lucro líquido: (aluguéis recebidos + vendas de produtos) − (contas pagas + parcelas de compras pagas)
+- "Próximos atendimentos" passou para a Agenda, embaixo do calendário, seguindo o filtro de tatuador

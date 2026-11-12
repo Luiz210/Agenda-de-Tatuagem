@@ -243,6 +243,54 @@ public class ContasService {
 		return resumo(c);
 	}
 
+	// ---------- Usado pelo painel (quem chama confere o perfil) ----------
+
+	/** Contas avulsas (sem compra) com vencimento no período. */
+	@Transactional(readOnly = true)
+	public List<ContaResumo> avulsasEntre(LocalDate inicio, LocalDate fim) {
+		return em.createQuery("select c from ContaPagar c where c.compra is null and c.vencimento between :i and :f"
+				+ " order by c.vencimento", ContaPagar.class)
+				.setParameter("i", inicio)
+				.setParameter("f", fim)
+				.getResultStream()
+				.map(this::resumo)
+				.toList();
+	}
+
+	/** A próxima conta a pagar, avulsa ou parcela: a vencida mais antiga, ou a que vence primeiro. */
+	@Transactional(readOnly = true)
+	public ContaResumo proximaAPagar(boolean parcela) {
+		return em.createQuery("select c from ContaPagar c left join fetch c.compra where c.pagaEm is null and c.compra is "
+				+ (parcela ? "not null" : "null") + " order by c.vencimento, c.id", ContaPagar.class)
+				.setMaxResults(1)
+				.getResultStream()
+				.map(this::resumo)
+				.findFirst()
+				.orElse(null);
+	}
+
+	/** Compras cadastradas no período. */
+	@Transactional(readOnly = true)
+	public List<CompraResumo> comprasEntre(LocalDate inicio, LocalDate fim) {
+		return em.createQuery("select c from Compra c where c.criadoEm >= :i and c.criadoEm < :f order by c.id",
+				Compra.class)
+				.setParameter("i", inicio.atStartOfDay())
+				.setParameter("f", fim.plusDays(1).atStartOfDay())
+				.getResultStream()
+				.map(this::resumo)
+				.toList();
+	}
+
+	/** Quanto foi pago no período: em contas avulsas ou em parcelas de compras. */
+	@Transactional(readOnly = true)
+	public BigDecimal pagoEntre(LocalDate inicio, LocalDate fim, boolean parcelas) {
+		return em.createQuery("select coalesce(sum(c.valor), 0) from ContaPagar c where c.pagaEm between :i and :f"
+				+ " and c.compra is " + (parcelas ? "not null" : "null"), BigDecimal.class)
+				.setParameter("i", inicio)
+				.setParameter("f", fim)
+				.getSingleResult();
+	}
+
 	// ---------- Apoio ----------
 
 	/** Divide o total; a última parcela absorve os centavos que sobram da divisão. */

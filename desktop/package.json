@@ -1,7 +1,7 @@
 {
   "name": "agenda-tatuagem",
   "productName": "Agenda de Tatuagem",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Agenda de sessões de tatuagem",
   "author": "Luiz",
   "private": true,

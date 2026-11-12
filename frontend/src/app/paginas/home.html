@@ -1,6 +1,6 @@
 <header class="cabecalho">
   <div>
-    <h1 class="titulo-pagina">Hoje</h1>
+    <h1 class="titulo-pagina">Home</h1>
     <p class="sub-pagina">{{ hojeExtenso }}</p>
   </div>
   <button type="button" class="botao" (click)="agendando.set(true)">+ Agendar sessão</button>
@@ -10,7 +10,7 @@
   <p class="aviso-erro" role="alert">{{ erro() }}</p>
 }
 
-<section class="numeros" aria-label="Resumo">
+<section class="numeros" aria-label="Resumo do dia">
   <div>
     <span>Atendimentos hoje</span>
     <strong>{{ ativasHoje().length }}</strong>
@@ -18,7 +18,7 @@
   @if (autenticacao.conta()) {
     <div>
       <span>Seu a receber hoje</span>
-      <strong>{{ dinheiro(aReceberHoje()) }}</strong>
+      <strong class="realce">{{ dinheiro(aReceberHoje()) }}</strong>
     </div>
   }
   <div>
@@ -34,57 +34,237 @@
 </section>
 
 <section class="bloco">
-  <h2>Atendimentos de hoje</h2>
+  <div class="titulo-bloco">
+    <h2>Atendimentos de hoje</h2>
+    <a routerLink="/agenda" class="link-acao">Ver agenda</a>
+  </div>
   @for (s of deHoje(); track s.id) {
     <app-cartao-sessao [sessao]="s" [urlImagem]="imagem(s)" (abrir)="aberta.set($event)" />
   } @empty {
     @if (carregado()) {
       <div class="sem-hoje">
         <p>Nenhum atendimento hoje.</p>
-        @if (proxima(); as p) {
-          <p class="rotulo-proxima">Próximo atendimento</p>
-          <app-cartao-sessao [sessao]="p" [mostrarData]="true" [urlImagem]="imagem(p)" (abrir)="aberta.set($event)" />
-        } @else {
-          <p class="vazio-texto">Também não há nada agendado para os próximos dias.</p>
-        }
+        <p class="vazio-texto">Os próximos atendimentos estão na <a routerLink="/agenda">Agenda</a>.</p>
       </div>
     }
   }
 </section>
 
-@if (depois().length) {
-  <section class="bloco">
-    <div class="titulo-bloco">
-      <h2>Próximos atendimentos</h2>
-      <a routerLink="/agenda" class="link-acao">Ver agenda</a>
+<!-- Números do estúdio no período -->
+<div class="titulo-estudio">
+  <h2>Estúdio</h2>
+  <div class="periodo">
+    <div class="abas" role="tablist" aria-label="Período">
+      <button type="button" role="tab" [class.ativa]="periodo() === 'mes'" [attr.aria-selected]="periodo() === 'mes'"
+        (click)="trocarPeriodo('mes')">Mês</button>
+      <button type="button" role="tab" [class.ativa]="periodo() === 'ano'" [attr.aria-selected]="periodo() === 'ano'"
+        (click)="trocarPeriodo('ano')">Ano</button>
     </div>
-    @for (s of depois(); track s.id) {
-      <app-cartao-sessao [sessao]="s" [mostrarData]="true" [urlImagem]="imagem(s)" (abrir)="aberta.set($event)" />
+    <button type="button" class="botao secundario" aria-label="Período anterior" (click)="mudarPeriodo(-1)">‹</button>
+    <strong>{{ intervalo().nome }}</strong>
+    <button type="button" class="botao secundario" aria-label="Próximo período" (click)="mudarPeriodo(1)">›</button>
+  </div>
+</div>
+
+@if (painel(); as p) {
+  <section class="numeros" aria-label="Clientes, agenda e estoque">
+    <a routerLink="/clientes" [queryParams]="{ filtro: 'contatar' }">
+      <span>Clientes para contatar</span>
+      <strong [class.realce]="p.totalParaContatar > 0">{{ p.totalParaContatar }}</strong>
+    </a>
+    <a routerLink="/agenda">
+      <span>Sessões sem confirmação</span>
+      <strong [class.realce]="p.sessoesSemConfirmacao > 0">{{ p.sessoesSemConfirmacao }}</strong>
+    </a>
+    <a routerLink="/estoque">
+      <span>Itens para comprar</span>
+      <strong [class.realce]="paraComprar() > 0">{{ paraComprar() }}</strong>
+    </a>
+    <a routerLink="/produtos">
+      <span>Produtos vendidos</span>
+      <strong>{{ p.unidadesVendidas }}</strong>
+    </a>
+    @if (p.faturamentoProdutos != null) {
+      <a routerLink="/produtos">
+        <span>Faturamento com produtos</span>
+        <strong>{{ valorOuTraco(p.faturamentoProdutos) }}</strong>
+      </a>
     }
   </section>
-}
 
-@if (paraContatar().length) {
-  <section class="bloco">
-    <div class="titulo-bloco">
-      <h2>Clientes para chamar de volta</h2>
-      <a routerLink="/clientes" [queryParams]="{ filtro: 'contatar' }" class="link-acao">
-        Ver {{ paraContatar().length === 1 ? 'o cliente' : 'todos os ' + paraContatar().length }}
+  @if (p.financeiro; as f) {
+    <section class="numeros valores" aria-label="Resultado do estúdio">
+      <div>
+        <span>Aluguéis recebidos</span>
+        <strong>{{ valorOuTraco(f.resultado.recebidoDeColaboradores) }}</strong>
+      </div>
+      <div>
+        <span>Venda de produtos</span>
+        <strong>{{ valorOuTraco(f.resultado.vendaDeProdutos) }}</strong>
+      </div>
+      <div>
+        <span>Contas pagas</span>
+        <strong>{{ valorOuTraco(f.resultado.gastosComContas) }}</strong>
+      </div>
+      <div>
+        <span>Compras pagas</span>
+        <strong>{{ valorOuTraco(f.resultado.gastosComCompras) }}</strong>
+      </div>
+      <div class="total">
+        <span>Lucro líquido</span>
+        <strong class="realce">{{ valorOuTraco(f.resultado.lucroLiquido) }}</strong>
+        @if (f.resultado.outrasEntradas > 0) {
+          <small>+ {{ valorOuTraco(f.resultado.outrasEntradas) }} em entradas avulsas, fora da conta</small>
+        }
+      </div>
+    </section>
+
+    <section class="numeros valores" aria-label="A receber e a pagar">
+      <a routerLink="/financeiro">
+        <span>A receber de aluguel</span>
+        <strong [class.realce]="f.atrasados.length > 0">{{ valorOuTraco(f.aReceberDeColaboradores) }}</strong>
+        @if (f.atrasados.length) {
+          <small>{{ f.atrasados.length }} {{ f.atrasados.length === 1 ? 'colaborador' : 'colaboradores' }} em atraso</small>
+        }
       </a>
-    </div>
-    <ul class="reengajar">
-      @for (c of paraContatar().slice(0, 5); track c.id) {
-        <li>
-          <a [routerLink]="['/clientes', c.id]">
-            <strong>{{ c.nome }}</strong>
-            @if (c.ultimaSessao) {
-              <small>última tatuagem {{ tempoDesde(c.ultimaSessao) }}</small>
+      <a routerLink="/financeiro">
+        <span>Contas no período</span>
+        <strong>{{ valorOuTraco(f.contas.total) }}</strong>
+        <small>{{ valorOuTraco(f.contas.emAberto) }} em aberto</small>
+      </a>
+      <a routerLink="/financeiro">
+        <span>Compras no período</span>
+        <strong>{{ valorOuTraco(f.compras.total) }}</strong>
+        <small>{{ f.compras.quantidade }} {{ f.compras.quantidade === 1 ? 'compra' : 'compras' }}</small>
+      </a>
+    </section>
+  }
+
+  <div class="blocos">
+    <section class="escuro">
+      <h3>Clientes para chamar de volta</h3>
+      <ul>
+        @for (c of p.paraContatar; track c.id) {
+          <li>
+            <a [routerLink]="['/clientes', c.id]">{{ c.nome }}</a>
+            <small>{{ tempoDesde(c.ultimaSessao) }}</small>
+          </li>
+        } @empty {
+          <li class="vazio">Ninguém para contatar agora.</li>
+        }
+      </ul>
+    </section>
+
+    <section class="escuro">
+      <h3>Para comprar</h3>
+      <ul>
+        @for (a of p.alertas; track a.id) {
+          <li>
+            <a [routerLink]="a.categoria === 'INSUMO' ? '/estoque' : '/produtos'">{{ a.nome }}</a>
+            <span [class.realce]="a.situacao === 'ABAIXO'">
+              {{ a.quantidade }} {{ a.unidade || 'un.' }}
+              <small>{{ a.situacao === 'ABAIXO' ? 'comprar' : 'acabando' }}</small>
+            </span>
+          </li>
+        } @empty {
+          <li class="vazio">Nada perto do limiar de compra.</li>
+        }
+      </ul>
+    </section>
+
+    <section class="escuro">
+      <h3>Produtos mais vendidos</h3>
+      <ol class="ranking">
+        @for (r of p.ranking; track r.id; let i = $index) {
+          <li>
+            <div class="rotulo">
+              <span>{{ i + 1 }}º {{ r.nome }}</span>
+              <strong>{{ r.vendidos }}</strong>
+            </div>
+            <div class="trilho"><div class="preenchido" [class.primeiro]="i === 0" [style.width]="largura(r.vendidos)"></div></div>
+            @if (r.faturamento != null) {
+              <small>{{ valorOuTraco(r.faturamento) }}</small>
             }
-          </a>
-        </li>
+          </li>
+        } @empty {
+          <li class="vazio">Nenhuma venda no período.</li>
+        }
+      </ol>
+    </section>
+
+    @if (p.financeiro; as f) {
+      <section class="escuro">
+        <h3>Aluguéis atrasados</h3>
+        <ul>
+          @for (a of f.atrasados; track a.colaboradorId) {
+            <li>
+              <span>{{ a.colaboradorNome }} <small>{{ mesesEmTexto(a.meses) }}</small></span>
+              <strong class="realce">{{ valorOuTraco(a.total) }}</strong>
+            </li>
+          } @empty {
+            <li class="vazio">Ninguém em atraso.</li>
+          }
+        </ul>
+      </section>
+
+      <section class="escuro">
+        <h3>Contas</h3>
+        <ul>
+          @if (f.contas.proxima; as c) {
+            <li>
+              <button type="button" (click)="abrindoConta.set(c)">
+                <small>{{ c.situacao === 'VENCIDA' ? 'Vencida desde' : 'Próximo vencimento' }} {{ dataCurta(c.vencimento) }}</small>
+                {{ c.nome }}
+              </button>
+              <strong [class.realce]="c.situacao === 'VENCIDA'">{{ valorOuTraco(c.valor) }}</strong>
+            </li>
+          }
+          @if (f.contas.maisCara; as c) {
+            <li>
+              <button type="button" (click)="abrindoConta.set(c)"><small>Mais cara do período</small>{{ c.nome }}</button>
+              <strong>{{ valorOuTraco(c.valor) }}</strong>
+            </li>
+          }
+          @if (!f.contas.proxima && !f.contas.maisCara) {
+            <li class="vazio">Nenhuma conta.</li>
+          }
+        </ul>
+      </section>
+
+      <section class="escuro">
+        <h3>Compras</h3>
+        <ul>
+          @if (f.compras.proximaParcela; as c) {
+            <li>
+              <button type="button" (click)="abrindoCompra.set(c.compraId)">
+                <small>{{ c.situacao === 'VENCIDA' ? 'Parcela vencida desde' : 'Próxima parcela' }} {{ dataCurta(c.vencimento) }}</small>
+                {{ c.nome }}
+              </button>
+              <strong [class.realce]="c.situacao === 'VENCIDA'">{{ valorOuTraco(c.valor) }}</strong>
+            </li>
+          }
+          @if (f.compras.maisCara; as c) {
+            <li>
+              <button type="button" (click)="abrindoCompra.set(c.id)"><small>Mais cara do período</small>{{ c.nome }}</button>
+              <strong>{{ valorOuTraco(c.valorTotal) }}</strong>
+            </li>
+          }
+          @if (!f.compras.proximaParcela && !f.compras.maisCara) {
+            <li class="vazio">Nenhuma compra.</li>
+          }
+        </ul>
+      </section>
+    }
+  </div>
+
+  @if (!p.financeiro) {
+    <p class="aviso-info">
+      O resultado do estúdio, os aluguéis, as contas e as compras aparecem só para administradores.
+      @if (autenticacao.estudio()) {
+        <button type="button" class="link-acao" (click)="identificar()">Digitar código de administrador</button>
       }
-    </ul>
-  </section>
+    </p>
+  }
 }
 
 @if (agendando()) {
@@ -92,4 +272,10 @@
 }
 @if (aberta(); as s) {
   <app-modal-tatuagem [tatuagemId]="s.tatuagemId" [sessaoId]="s.id" (fechar)="aberta.set(null)" />
+}
+@if (abrindoConta(); as c) {
+  <app-modal-conta [conta]="c" (abrirCompra)="abrindoConta.set(null); abrindoCompra.set($event)" (fechar)="abrindoConta.set(null)" />
+}
+@if (abrindoCompra(); as id) {
+  <app-modal-compra [compraId]="id" (fechar)="abrindoCompra.set(null)" />
 }

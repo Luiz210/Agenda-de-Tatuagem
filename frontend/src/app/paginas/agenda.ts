@@ -2,13 +2,13 @@ import { Component, computed, effect, inject, signal } from '@angular/core';
 import { Agenda, SessaoAgenda, mensagemDeErro } from '../core/agenda';
 import { Autenticacao } from '../core/autenticacao';
 import { Colaboradores } from '../core/colaboradores';
-import { dataPorExtenso, dinheiro, hojeIso, inicioEFimDoMes, mudarMes, nomeDoMes } from '../core/datas';
+import { dataPorExtenso, dinheiro, hojeIso, inicioEFimDoMes, mudarMes, nomeDoMes, somarDias } from '../core/datas';
 import { CalendarioAgenda } from '../componentes/calendario-agenda';
 import { CartaoSessao } from '../componentes/cartao-sessao';
 import { ModalAgendar } from '../componentes/modal-agendar';
 import { ModalTatuagem } from '../componentes/modal-tatuagem';
 
-/** O mês inteiro; tocando no dia, aparecem as sessões dele. */
+/** O mês inteiro; tocando no dia, aparecem as sessões dele. Embaixo, os próximos atendimentos. */
 @Component({
   selector: 'app-pagina-agenda',
   imports: [CalendarioAgenda, CartaoSessao, ModalAgendar, ModalTatuagem],
@@ -26,6 +26,8 @@ export class PaginaAgenda {
   protected readonly mes = signal(new Date().getMonth());
   protected readonly dia = signal(this.hoje);
   protected readonly sessoes = signal<SessaoAgenda[]>([]);
+  /** As próximas sessões agendadas a partir de amanhã, com o mesmo filtro de tatuador. */
+  protected readonly proximas = signal<SessaoAgenda[]>([]);
   protected readonly erro = signal('');
   protected readonly agendando = signal(false);
   protected readonly aberta = signal<SessaoAgenda | null>(null);
@@ -48,6 +50,21 @@ export class PaginaAgenda {
       this.autenticacao.conta();
       void this.carregar(this.ano(), this.mes(), this.tatuador());
     });
+    effect(() => {
+      this.agenda.versao();
+      this.autenticacao.conta();
+      void this.carregarProximas(this.tatuador());
+    });
+  }
+
+  private async carregarProximas(tatuador: string) {
+    try {
+      this.proximas.set(
+        await this.agenda.proximas(somarDias(this.hoje, 1), 8, tatuador ? Number(tatuador) : null),
+      );
+    } catch (e) {
+      this.erro.set(mensagemDeErro(e));
+    }
   }
 
   private async carregar(ano: number, mes: number, tatuador: string) {

@@ -10,3 +10,5 @@
   .painel { position: static; }
 }
 .filtro select { min-width: 11rem; }
+.proximos { display: grid; gap: 0.6rem; margin-top: 2rem; max-width: 60rem; }
+.proximos h2 { font-size: 1.35rem; margin: 0 0 0.2rem; }

@@ -37,7 +37,7 @@ describe('App', () => {
       JSON.stringify({ token: 't', conta: { id: 1, nome: 'L', nomeUsuario: 'l', perfil: 'PADRAO', expiraEm: null } }),
     );
     expect(links(await criar({ estudio: false, temContas: true }))).toEqual([
-      'Hoje',
+      'Home',
       'Agenda',
       'Clientes',
       'Estoque',

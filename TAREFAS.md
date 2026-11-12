@@ -30,12 +30,12 @@ Combinado: toda tabela nova entra nos dados de demonstração (`DadosDeDemonstra
 - [x] Aba "Para comprar" com os itens no limiar (Comprar) ou perto dele (Acabando).
 - [x] Histórico de movimentos por item, com "Desfazer"; faturamento por produto só para administradores.
 
-## Avisos no menu (feito, falta testar)
+## Avisos no menu (publicado na 1.0.5)
 
 - [x] Número ao lado de Agenda (sessões de hoje a 2 dias sem confirmação), Clientes (para contatar), Estoque e Produtos (no limiar de compra).
 - [x] Sessão "Confirmada": botão "Confirmou" no cartão; volta a pendente se a sessão for remarcada.
 
-## Fase 4: financeiro (feita, falta testar)
+## Fase 4: financeiro (publicada na 1.0.5)
 
 - [x] Tela Financeiro só para administradores (no PC do estúdio, pede o código de um administrador até para ver).
 - [x] Caixa com saldo começando em zero: entradas (aluguéis, vendas de produtos, entradas avulsas) menos saídas (contas pagas).
@@ -45,12 +45,14 @@ Combinado: toda tabela nova entra nos dados de demonstração (`DadosDeDemonstra
 - [x] Entradas avulsas recebidas ou a receber.
 - [x] O valor das tatuagens não entra no caixa do estúdio.
 
-## Fase 5: painel e relatórios
+## Fase 5: painel e relatórios (feita, falta testar)
 
-- [ ] Clientes não contatados; estoque e produtos abaixo do limiar; produto mais vendido e faturamento com produtos.
-- [ ] Aluguel a receber e colaboradores em atraso.
-- [ ] Total de contas e de compras, próximo vencimento e item mais caro.
-- [ ] Lucro líquido: (aluguéis + vendas de produtos) − (contas + compras).
+- [x] Indicadores na Home (antes "Hoje"), por mês ou por ano, em faixas e blocos pretos.
+- [x] "Próximos atendimentos" passou da Home para a Agenda, com o filtro de tatuador.
+- [x] Para todos: clientes para chamar de volta, sessões sem confirmação, estoque e produtos no limiar ou perto dele, ranking dos produtos mais vendidos.
+- [x] Só administradores: faturamento com produtos, aluguel a receber e colaboradores em atraso.
+- [x] Contas e compras: total no período, próximo vencimento e item mais caro, com atalho para abrir.
+- [x] Lucro líquido: (aluguéis recebidos + vendas de produtos) − (contas pagas + parcelas de compras pagas). Entradas avulsas aparecem à parte.
 
 ## Depois
 
