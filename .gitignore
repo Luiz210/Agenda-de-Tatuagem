@@ -6,6 +6,7 @@ backend/target/
 desktop/dist/
 desktop/ui/
 desktop/backend/
+.wrangler/
 
 # IDEs
 .idea/

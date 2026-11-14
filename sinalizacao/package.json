@@ -1,0 +1,14 @@
+{
+  "name": "agenda-tatuagem-sinalizacao",
+  "private": true,
+  "description": "Servidor de sinalização da Agenda de Tatuagem: apresenta os computadores para a conexão pela internet",
+  "scripts": {
+    "dev": "wrangler dev",
+    "publicar": "wrangler deploy",
+    "log": "wrangler tail",
+    "teste": "node teste.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4"
+  }
+}

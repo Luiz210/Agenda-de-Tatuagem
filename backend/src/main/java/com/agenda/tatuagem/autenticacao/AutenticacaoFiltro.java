@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.util.Optional;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
@@ -26,6 +28,11 @@ import jakarta.servlet.http.HttpServletResponse;
  * No computador do estúdio (o que roda o servidor), qualquer um pode consultar
  * sem login; para alterar, a pessoa digita o código pessoal, que a identifica
  * por alguns minutos. Nos outros computadores o login continua normal.
+ *
+ * Quem chega pela internet também entra por 127.0.0.1, porque é o aplicativo do
+ * estúdio que entrega os pedidos. Por isso o endereço não basta: as telas do
+ * próprio computador enviam um segredo que o aplicativo combina com o servidor
+ * ao iniciar. Sem o segredo, o pedido é tratado como remoto.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -37,11 +44,19 @@ public class AutenticacaoFiltro extends OncePerRequestFilter {
 	private static final Set<String> CONSULTAS = Set.of("GET", "HEAD", "OPTIONS");
 	private static final String PEDIR_CODIGO = "{\"mensagem\":\"Digite seu código para continuar.\",\"codigo\":\"PIN\"}";
 
+	/** Cabeçalho com o segredo das telas do próprio computador. */
+	static final String CABECALHO_LOCAL = "X-Agenda-Local";
+
 	private final AutenticacaoService autenticacaoService;
 
+	/** Vazio quando o servidor roda fora do aplicativo (desenvolvimento): aí vale só o endereço. */
+	private final byte[] segredoLocal;
+
 	// Lazy: o servidor web cria os filtros antes de o JPA estar pronto.
-	AutenticacaoFiltro(@Lazy AutenticacaoService autenticacaoService) {
+	AutenticacaoFiltro(@Lazy AutenticacaoService autenticacaoService,
+			@Value("${agenda.segredo-local:}") String segredoLocal) {
 		this.autenticacaoService = autenticacaoService;
+		this.segredoLocal = segredoLocal.trim().getBytes(StandardCharsets.UTF_8);
 	}
 
 	@Override
@@ -80,12 +95,20 @@ public class AutenticacaoFiltro extends OncePerRequestFilter {
 		}
 	}
 
-	private static boolean pedidoDoProprioComputador(HttpServletRequest pedido) {
+	private boolean pedidoDoProprioComputador(HttpServletRequest pedido) {
 		try {
-			return InetAddress.getByName(pedido.getRemoteAddr()).isLoopbackAddress();
+			if (!InetAddress.getByName(pedido.getRemoteAddr()).isLoopbackAddress()) {
+				return false;
+			}
 		} catch (UnknownHostException e) {
 			return false;
 		}
+		if (segredoLocal.length == 0) {
+			return true;
+		}
+		String apresentado = pedido.getHeader(CABECALHO_LOCAL);
+		return apresentado != null
+				&& MessageDigest.isEqual(segredoLocal, apresentado.getBytes(StandardCharsets.UTF_8));
 	}
 
 	/**

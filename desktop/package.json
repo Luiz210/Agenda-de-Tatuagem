@@ -1,14 +1,16 @@
 {
   "name": "agenda-tatuagem",
   "productName": "Agenda de Tatuagem",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Agenda de sessões de tatuagem",
   "author": "Luiz",
   "private": true,
   "main": "main.js",
+  "sinalizacao": "wss://agenda-tatuagem-sinal.agenda-tatuagem.workers.dev",
   "scripts": {
     "start": "electron .",
-    "instalador": "electron-builder --win"
+    "instalador": "electron-builder --win",
+    "teste": "node --test testes/internet.test.js"
   },
   "build": {
     "appId": "com.agenda.tatuagem",
@@ -22,6 +24,7 @@
       "preload.js",
       "splash.html",
       "conexao.html",
+      "internet/**",
       "build/icon.png",
       "ui/**"
     ],

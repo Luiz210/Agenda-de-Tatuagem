@@ -54,6 +54,17 @@ Combinado: toda tabela nova entra nos dados de demonstração (`DadosDeDemonstra
 - [x] Contas e compras: total no período, próximo vencimento e item mais caro, com atalho para abrir.
 - [x] Lucro líquido: (aluguéis recebidos + vendas de produtos) − (contas pagas + parcelas de compras pagas). Entradas avulsas aparecem à parte.
 
+## Conexão pela internet (feita, falta publicar o servidor de sinalização e testar entre duas redes)
+
+- [x] Canal WebRTC entre os aplicativos, com as mesmas chamadas da rede local; conexão direta quando dá, retransmissão (TURN) quando não dá.
+- [x] Servidor de sinalização em Cloudflare Workers (pasta `sinalizacao/`), sem dados da agenda.
+- [x] Tela Conexão: ID do estúdio, código temporário (10 minutos, uso único, 5 tentativas), computadores autorizados com "Remover".
+- [x] Cada computador autorizado recebe uma chave própria e reconecta sozinho; queda e volta tratadas.
+- [x] Servidor da agenda continua em 127.0.0.1 e só trata como "computador do estúdio" as telas do próprio aplicativo (segredo local).
+- [ ] Publicar o servidor de sinalização e pôr o endereço em `desktop/package.json` (passos em `sinalizacao/README.md`).
+- [ ] Criar a chave do TURN na Cloudflare, para funcionar com CGNAT e 4G/5G.
+- [ ] Testar entre duas redes de verdade (por exemplo, o PC do estúdio e um notebook no 4G do celular).
+
 ## Depois
 
 - [ ] WhatsApp mais completo: mensagem editável, lembrete automático no dia anterior.

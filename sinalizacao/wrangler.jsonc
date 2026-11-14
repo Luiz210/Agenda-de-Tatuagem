@@ -1,0 +1,11 @@
+{
+  // Servidor de sinalização da Agenda de Tatuagem. Publicar: npx wrangler deploy
+  "name": "agenda-tatuagem-sinal",
+  "main": "src/index.js",
+  "compatibility_date": "2026-01-01",
+  "durable_objects": {
+    "bindings": [{ "name": "SALAS", "class_name": "Sala" }]
+  },
+  // SQLite é o tipo de Durable Object aceito no plano gratuito.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Sala"] }]
+}

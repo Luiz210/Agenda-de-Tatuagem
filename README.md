@@ -16,6 +16,8 @@ de WhatsApp e caderno.
 - **Ficha do cliente:** todas as tatuagens que ele fez e quanto já pagou.
 - **Confirmação pelo WhatsApp:** um clique abre a conversa com a mensagem de confirmação pronta.
 - **Login e uso em rede:** um computador pode servir os dados para outros da mesma rede.
+- **Uso pela internet:** computadores autorizados conectam ao computador do estúdio de qualquer lugar,
+  sem abrir portas no roteador.
 - **Atualização automática:** versões novas são baixadas e instaladas pelo próprio aplicativo.
 
 ## Tecnologias
@@ -25,6 +27,7 @@ de WhatsApp e caderno.
 | Back-end | Java 17, Spring Boot 4, JPA/Hibernate, banco H2 em arquivo |
 | Telas | Angular 22 |
 | Aplicativo de PC | Electron, com o Java embutido no instalador |
+| Conexão pela internet | WebRTC (canal de dados cifrado), sinalização em Cloudflare Workers |
 
 Os dados ficam em `%USERPROFILE%\.agenda-tatuagem`. O servidor usa a porta **8090**.
 
@@ -34,6 +37,7 @@ Os dados ficam em `%USERPROFILE%\.agenda-tatuagem`. O servidor usa a porta **809
 backend/    API em Spring Boot
 frontend/   Telas em Angular
 desktop/    Aplicativo Electron que junta as telas e o back-end
+sinalizacao/  Servidor que apresenta os computadores na conexão pela internet
 gerar_instalador.bat   Gera o instalador do Windows
 publicar.bat           Gera e publica uma versão nova no GitHub
 ```
@@ -60,6 +64,29 @@ precisa baixar Java nem banco de dados.
 
 Os aplicativos instalados encontram a versão nova sozinhos e avisam quando ela está pronta para instalar.
 Para isso, este repositório precisa ser **público**.
+
+## Conexão pela internet
+
+Na tela **Conexão** (ícone da bandeja), o computador do estúdio marca "Deixar computadores autorizados
+conectarem pela internet". A tela passa a mostrar o **ID do estúdio** e o botão **Gerar código de
+conexão**. No outro computador, escolha "Conectar a outro computador" → "Pela internet" e digite o ID e
+o código. O código vale 10 minutos e serve uma vez; depois disso o computador fica autorizado e
+reconecta sozinho, até ser removido na lista "Computadores autorizados".
+
+Como funciona:
+
+- Os dois aplicativos abrem um canal WebRTC cifrado (DTLS) e as mesmas chamadas que iriam pela rede
+  local passam por ele. As telas e o back-end não mudam.
+- A conexão é direta sempre que os roteadores permitem (STUN). Quando não permitem (CGNAT, 4G/5G,
+  firewall), passa por um servidor de retransmissão (TURN), ainda cifrada de ponta a ponta.
+- Nenhuma porta é aberta: o servidor da agenda continua em `127.0.0.1` e os dois lados só fazem
+  conexões de saída.
+- O código de conexão e a chave de cada computador nunca são enviados: cada lado prova que os conhece
+  com um HMAC preso às impressões digitais daquela conexão, o que também barra um intermediário.
+- Por cima disso continua o login normal da agenda.
+
+Para ativar, publique o servidor de sinalização uma vez: veja [sinalizacao/README.md](sinalizacao/README.md).
+Testes da lógica de pareamento: `npm run teste` na pasta `desktop`.
 
 ## Próximos passos
 

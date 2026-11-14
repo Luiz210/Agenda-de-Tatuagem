@@ -1,7 +1,8 @@
-Fase 5: indicadores do estúdio na Home
+Conexão entre computadores pela internet
 
-- "Hoje" agora é a Home, com os atendimentos do dia e os números do estúdio por mês ou por ano
-- Para todos: clientes para chamar de volta, sessões sem confirmação, materiais e produtos no limiar de compra e ranking dos produtos mais vendidos
-- Só para administradores: resultado do estúdio com o lucro líquido, aluguel a receber e colaboradores em atraso, contas e compras do período (total, próximo vencimento e o item mais caro)
-- Lucro líquido: (aluguéis recebidos + vendas de produtos) − (contas pagas + parcelas de compras pagas)
-- "Próximos atendimentos" passou para a Agenda, embaixo do calendário, seguindo o filtro de tatuador
+- Agora dá para usar a agenda do estúdio de outro lugar, em outra rede ou outra cidade, sem mexer no roteador
+- No computador do estúdio: tela Conexão → "Deixar computadores autorizados conectarem pela internet". Aparecem o ID do estúdio e o botão "Gerar código de conexão"
+- No outro computador: tela Conexão → "Conectar a outro computador" → "Pela internet", com o ID e o código. O código vale 10 minutos e serve uma vez; depois o computador reconecta sozinho
+- Lista de computadores autorizados no estúdio, com "Remover" para tirar o acesso de um deles
+- A comunicação é cifrada de ponta a ponta e continua exigindo o login de cada pessoa
+- A conexão pela rede local continua igual
